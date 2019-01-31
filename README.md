@@ -5,5 +5,5 @@ Phishing Sites: Build a seed list of phising domains that are updated daily, and
 **Start Script:**\
 Under User Home Directory:
 ```bash
-https://github.com/yangkenneth/ECE-6612.git
+git clone https://github.com/yangkenneth/ECE-6612.git
 ```
