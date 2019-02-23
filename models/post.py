@@ -12,6 +12,8 @@ class Post(object):
         self.website_url = website_url
         self.content = content
         self.create_date = date
+        self.outbound_urls = outbound_urls
+        self.num_symbols_in_url = num_symbols_in_url
 
     def save_to_mongo(self):
         Database.insert(data=self.json())
@@ -22,7 +24,9 @@ class Post(object):
             'website_id': self.website_id,
             'website_url': self.website_url,
             'content': self.content,
-            'date': self.create_date
+            'date': self.create_date,
+            'outbound_urls': self.outbound_urls,
+            'num_symbols_in_url' = self.num_symbols_in_url
         }
 
     @staticmethod
