@@ -23,3 +23,7 @@ class Database(object):
     @staticmethod
     def find_one(query):
         return Database.COLLECTIONS.find_one(query)
+
+    @staticmethod
+    def total_entries():
+        return Database.COLLECTIONS.count()

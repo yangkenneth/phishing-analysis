@@ -1,1 +1,5 @@
 *.db
+.DS_Store
+.gitignore
+.idea
+*__pycache__*
