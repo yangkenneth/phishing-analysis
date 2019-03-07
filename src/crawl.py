@@ -1,6 +1,14 @@
 import urllib3
+import math
 from bs4 import BeautifulSoup
 import socket
+from database import access_db
+from collect_data import extract_batches as data
+import re
+import argparse
+import datetime
+import json
+
 
 class Url:
     def __init__(self, id, url):
@@ -11,15 +19,36 @@ class Url:
         :param id: A unique Id
         """
         self._root_url = None
+        self._parent_url = None
         self._ip_address = None
-        self._neighbors = {}
+        self._neighbors = []
         self._id = id
         self._url = url
         self._content = None
+        self._visited = 'WHITE'
+        self._distance = 0
 
 
     def __str__(self):
-        return str('id: {}, url: {}, ip_address: {}'.format(self.get_id(), self.get_url(), self.get_ip_address()))
+        return str('id: {}, url: {}, ip_address: {}, root_url: {}, parent_url: {}, distance_from_root: {}, \n'.format(
+            self.get_id(), self.get_url(), self.get_ip_address(), self.get_parent_url(), self._root_url, self._distance))
+
+    def __iter__(self):
+        yield 'time_stamp',         str(datetime.datetime.now())
+        yield 'id',                 self.get_id()
+        yield 'url',                self.get_url()
+        yield 'ip_address',         self.get_ip_address()
+        yield 'root_url',           self.get_root_url()
+        yield 'parent_url',         self.get_parent_url()
+        yield 'distance_from_root', self.get_distance()
+        yield 'url_content',        self.get_content()
+
+    def as_json(self):
+        db_string = {'time_stamp': str(datetime.datetime.now()).encode('utf-8', 'strict'), 'id':self.get_id(),
+                     'url':str(self.get_url()).encode('utf-8', 'strict'), 'ip_address': str(self.get_ip_address()).encode('utf-8', 'strict'),
+                     'root_url': str(self.get_root_url()).encode('utf-8', 'strict'), 'parent_url':str(self.get_parent_url()).encode('utf-8', 'strict'), 'distance_from_root':self.get_distance(),
+                     'url_content': str(self.get_content()).encode('utf-8', 'strict')}
+        return db_string
 
     def get_url(self):
         return self._url
@@ -41,6 +70,45 @@ class Url:
         """
         return self._neighbors
 
+    def get_content(self):
+        """
+
+        :return: returns the content of the url
+        """
+        return self._content
+
+    def get_distance(self):
+        """
+
+        :return: return the distance
+        """
+        return self._distance
+
+    def get_parent_url(self):
+        """
+
+        :return: returns the immediate parent url
+        """
+        return self._parent_url
+
+    def get_root_url(self):
+        """
+
+        :return: returns the root url
+        """
+        return self._root_url
+
+    def get_visited_status(self):
+        """
+
+        :return: returns whether a url has been visited or not
+        """
+
+        return self._visited
+
+    def set_parent_url(self, parent_url):
+
+        self._parent_url = parent_url
 
     def set_root_url(self, root_url):
         """
@@ -74,20 +142,104 @@ class Url:
         """
         self._content = content
 
+    def set_visited_status(self, status):
+        """
+
+        :param status: sets the visitation status of this URL
+        :return: nothing
+        """
+        self._visited = status
+
+    def set_distance(self, dist):
+        """
+
+        :param dist: the distance of this url from the ground truth
+        :return: the distance
+        """
+        self._distance = dist
+
 
 class Crawl:
 
-    def __init__(self, url):
-        self.root_ip = None
-        self.url = url
+    def __init__(self, args):
+        self.batch_sz = args.batch_size
+        self.start = args.start
+        self.id = args.start
+        self.args = args
+
+    def crawl(self):
+        """
+
+        :param max_iter:
+        :return: nothing
+        """
+        table_instances = self.init_database()
+
+        for i in range(self.start, self.args.num_urls, self.batch_sz):
+            print('batch: {} crawled'.format(i%self.batch_sz))
+            url_strings = data(i, self.batch_sz).tolist()
+            for j in range(len(url_strings)):
+                self.id = self.BFS(self.id, url_strings[j], url_strings[j], table_instances[self.args.url_table_name])
+
+    def init_database(self):
+        print('Please wait... initializing Mongo database...')
+        db_client = access_db.connect()
+        table_instances = {}
+        if not access_db.check_if_db_exists(self.args.database_name):
+            db_instance = access_db.create_database(db_client, self.args.database_name)
+        else:
+            db_instance = access_db.get_db_instance(self.args.database_name)
+        if not access_db.check_if_table_exists(db_instance, self.args.url_table_name):
+            table_instance = access_db.create_table(db_instance, self.args.url_table_name)
+            table_instances[self.args.url_table_name] = access_db.create_table_schema(table_instance)
+        else:
+            table_instances[self.args.url_table_name] = access_db.get_table_instance(self.args.database_name, self.args.url_table_name)
+        print('Table initialization complete...')
+        print(table_instances)
+        return table_instances
+
+
+    def BFS(self, id, x, root_url, table_instances):
+        """
+
+        :param id: the index of the url
+        :param x: the url string
+        :param root_url: the root url
+        :return: the current id
+        """
+        x = UpdateUrl(self.args).create_URL_node(id=id, url_string=x, root_url=root_url)
+        queue = []
+        x.set_visited_status('GRAY')
+        x.set_distance(0)
+        queue.append(x)
+        while len(queue) > 0:
+            current_url = queue.pop(0)
+            for url in current_url.get_neighbors():
+                id = id + 1
+                if type(url) is str:
+                    url = UpdateUrl(self.args).create_URL_node(id=id, url_string=url, root_url=root_url)
+                url.set_parent_url(current_url)
+                if url.get_visited_status() == 'WHITE':
+                    url.set_distance(current_url.get_distance() + 1)
+                    if url.get_distance() < 2:
+                        url.set_visited_status('GRAY')
+                        url.set_parent_url(current_url)
+                        database_id = access_db.insert_into_table(table_instances[self.args.url_table_name], url.as_json())
+                        print('status: saved', 'database_id: {}'.format(database_id), 'url: ', url)
+                        queue.append(url)
+                    else:
+                        break
+            current_url.set_visited_status('BLACK')
+        return id
+
 
 class UpdateUrl:
 
-    def __init__(self):
+    def __init__(self, args):
         """
         TODO: Add some attributes later
         """
-        pass
+        self.args = args
 
     def open_url(self,  Url):
         """
@@ -95,13 +247,24 @@ class UpdateUrl:
         :param Url: the Url Class
         :return: a BeautifulSoup object
         """
+        timeout = urllib3.Timeout(connect=self.args.http_timeout, read=self.args.socket_timeout)
+        client_options = {
+            "timeout": timeout,
+            "retries": self.args.http_retries
+        }
+
         url = Url.get_url()
-        http = urllib3.PoolManager()
-        response = http.request('GET', url)
-        if response.status not in [200, 320]:
-            print('url not found: status-', response.status)
-        soup = BeautifulSoup(response.data, 'html.parser')
-        return soup
+        try:
+            http = urllib3.PoolManager()
+            response = http.request('GET', url)
+            soup = BeautifulSoup(response.data, 'html.parser')
+            return soup
+        except(ConnectionResetError, urllib3.exceptions.MaxRetryError, ConnectionRefusedError,
+               ConnectionAbortedError, ConnectionError) as err:
+            print('url: {}, error: {}'.format(url, str(err)))
+        # if response.status not in [200, 320]:
+        #     print('url: {} not found: status: {}'.format(url.get_url(), response.status))
+
 
     def extract_links(self, Url):
         """
@@ -110,12 +273,15 @@ class UpdateUrl:
         :return: a list of hyperlinks
         """
         soup = self.open_url(Url)
-        links = []
-        for link in soup.find_all('a', href=True):
-            temp_link = link.get('href')
-            if temp_link.startswith('http'):
-                links.append(temp_link)
-        return links
+        if soup is not None:
+            links = []
+            for link in soup.find_all('a', href=True):
+                temp_link = link.get('href')
+                if temp_link.startswith('http'):
+                    links.append(temp_link)
+            return links
+        else:
+            return []
 
     def update_url_neigbors(self, Url):
         """
@@ -126,7 +292,8 @@ class UpdateUrl:
         neighbors = self.extract_links(Url)
         if Url.get_url() in neighbors:
             neighbors.remove(Url.get_url())
-        Url.set_neigbors(neighbors)
+
+        Url.set_neigbors(neighbors[0:args.num_neighbors])
 
     def update_url_content(self, Url):
         """
@@ -135,7 +302,8 @@ class UpdateUrl:
         :return: nothing
         """
         soup = self.open_url(Url)
-        Url.set_content = soup.string
+        if soup is not None:
+            Url.set_content(soup.contents)
 
     def update_ip_address(self, Url):
         """
@@ -143,21 +311,76 @@ class UpdateUrl:
         :param Url: the Url class
         :return: nothing
         """
-        hostname = str(Url.get_url()).split('.')[1:3]
-        host = hostname[0]+'.'+hostname[1].split('/')[0]
-        ip_address = socket.gethostbyname(host)
-        Url.set_ip_address(ip_address)
+        host = re.match('^([^.]+)\..*$', str(Url.get_url())).group()
+        hostname = host.split('.')[-2:]
+        if hostname[1] not in ['com', 'edu', 'net',  'org']:
+            hostname = host.split('/')[2]
+        else:
+            hostname = hostname[0]+'.'+hostname[1]
+        if hostname.startswith('https'):
+            hostname = hostname[8:]
+        try:
+            ip_address = socket.gethostbyname(hostname)
+            Url.set_ip_address(ip_address)
+        except(socket.gaierror) as err:
+            print(hostname + ': ' + str(err))
 
 
-def main():
-    url = Url(0, 'https://www.google.com')
-    updates = UpdateUrl()
-    updates.update_url_neigbors(url)
-    updates.update_url_content(url)
-    updates.update_ip_address(url)
-    print(url)
+    def create_URL_node(self, id, url_string, root_url=None):
+        """
+
+        :param id:
+        :param url_string:
+        :param root_url:
+        :return:
+        """
+        URL = Url(id=id, url=url_string)
+        if url_string == root_url:
+            URL.set_distance(0)
+        self.update_ip_address(URL)
+        self.update_url_content(URL)
+        self.update_url_neigbors(URL)
+        URL.set_root_url(root_url)
+        return URL
+
+
+def main(args):
+    url = 'https://stackexchange.com'
+    id = 0
+    root_url = 'https://www.people.com'
+    url = UpdateUrl().create_URL_node(id, url, url)
+    crawl = Crawl(args).BFS(id=id, x=url, root_url=url)
+
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser(description='Hyperparams')
+    parser.add_argument('--num_neighbors', nargs='?', type=int, default=5,
+                        help='max number of links to crawl in a new url')
+    parser.add_argument('--crawl_depth', nargs='?', type=int, default=3,
+                        help='the depth of crawling a url')
+    parser.add_argument('--resume', nargs='?', type=str, default=None,
+                        help='the url index to resume crawling')
+    parser.add_argument('--batch_size', nargs='?', type=int, default=15,
+                        help='Batch Size')
+    parser.add_argument('--database_name', nargs='?', type=str, default='phisermen_bank',
+                        help='the name of the Mongo database we will use')
+    parser.add_argument('--url_table_name', nargs='?', type=str, default='url_table',
+                        help='the name of the ip_table')
+    parser.add_argument('--features_table_name', nargs='?', type=str, default='feature_table',
+                        help='the name of the feature_table')
+    parser.add_argument('--num_urls', nargs='?', type=int, default=10000,
+                        help='total number of urls o list to crawl')
+    parser.add_argument('--http_timeout', nargs='?', type=int, default=5,
+                        help='timeout for http requests')
+    parser.add_argument('--socket_timeout', nargs='?', type=int, default=10,
+                        help='timeout for so')
+    parser.add_argument('--http_retries', nargs='?', type=int, default=1,
+                        help='number of retry counts')
+    parser.add_argument('--start', nargs='?', type=int, default=15,
+                        help='url index to start from')
+    args = parser.parse_args()
+    crawler = Crawl(args)
+    crawler.crawl()
+
 
 
