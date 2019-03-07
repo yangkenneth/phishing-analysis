@@ -221,7 +221,7 @@ class Crawl:
                 url.set_parent_url(current_url)
                 if url.get_visited_status() == 'WHITE':
                     url.set_distance(current_url.get_distance() + 1)
-                    if url.get_distance() < 2:
+                    if url.get_distance() < self.args.crawl_depth:
                         url.set_visited_status('GRAY')
                         url.set_parent_url(current_url)
                         database_id = access_db.insert_into_table(table_instances[self.args.url_table_name], url.as_json())
