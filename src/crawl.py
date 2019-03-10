@@ -249,7 +249,6 @@ class UpdateUrl:
             print('url: {}, error: {}'.format(url, str(err)))
 
 
-
     def extract_links(self, Url):
         """
         the function extracts all the hyperlinks in a webpage

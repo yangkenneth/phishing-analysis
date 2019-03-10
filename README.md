@@ -4,11 +4,11 @@ Phishing Sites: Build a seed list of phising domains that are updated daily, and
 
 ### Dependencies
 
-Sqlite3
-`sudo apt-get install sqlite3`
+Mongo DB
+`sudo apt-get install mongodb`
 
-SQLAlchemy 
-`pip install SQLAlchemy`
+Pymongo 
+`pip install pymongo`
 
 
 **Start Script:**\
