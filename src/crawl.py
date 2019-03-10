@@ -1,13 +1,15 @@
+from datetime import datetime
+from database import Database
+from models.post import Post
+from models.search import Search
 import urllib3
-import math
 from bs4 import BeautifulSoup
 import socket
-from database import access_db
-from collect_data import extract_batches as data
+import pandas as pd
+
 import re
 import argparse
 import datetime
-import json
 
 
 class Url:
@@ -15,7 +17,6 @@ class Url:
         """
         This class defines the Url class. Every Url node should have an ipaddress, neigboring links,
         a unique Id assigned on creation of the class instance and a string url
-
         :param id: A unique Id
         """
         self._root_url = None
@@ -43,13 +44,6 @@ class Url:
         yield 'distance_from_root', self.get_distance()
         yield 'url_content',        self.get_content()
 
-    def as_json(self):
-        db_string = {'time_stamp': str(datetime.datetime.now()).encode('utf-8', 'strict'), 'id':self.get_id(),
-                     'url':str(self.get_url()).encode('utf-8', 'strict'), 'ip_address': str(self.get_ip_address()).encode('utf-8', 'strict'),
-                     'root_url': str(self.get_root_url()).encode('utf-8', 'strict'), 'parent_url':str(self.get_parent_url()).encode('utf-8', 'strict'), 'distance_from_root':self.get_distance(),
-                     'url_content': str(self.get_content()).encode('utf-8', 'strict')}
-        return db_string
-
     def get_url(self):
         return self._url
 
@@ -65,42 +59,36 @@ class Url:
 
     def get_neighbors(self):
         """
-
         :return: links found in this Url
         """
         return self._neighbors
 
     def get_content(self):
         """
-
         :return: returns the content of the url
         """
         return self._content
 
     def get_distance(self):
         """
-
         :return: return the distance
         """
         return self._distance
 
     def get_parent_url(self):
         """
-
         :return: returns the immediate parent url
         """
         return self._parent_url
 
     def get_root_url(self):
         """
-
         :return: returns the root url
         """
         return self._root_url
 
     def get_visited_status(self):
         """
-
         :return: returns whether a url has been visited or not
         """
 
@@ -112,7 +100,6 @@ class Url:
 
     def set_root_url(self, root_url):
         """
-
         :param root_url: set the parent url in which this url was found
         :return: nothin
         """
@@ -120,7 +107,6 @@ class Url:
 
     def set_ip_address(self, ip_address):
         """
-
         :param ip_address: set the ip_address value
         :return: nothing
         """
@@ -128,7 +114,6 @@ class Url:
 
     def set_neigbors(self, neighbors):
         """
-
         :param neighbors: set neighboring links
         :return:
         """
@@ -136,7 +121,6 @@ class Url:
 
     def set_content(self, content):
         """
-
         :param content: sets the content of the url
         :return: nothing
         """
@@ -144,7 +128,6 @@ class Url:
 
     def set_visited_status(self, status):
         """
-
         :param status: sets the visitation status of this URL
         :return: nothing
         """
@@ -152,7 +135,6 @@ class Url:
 
     def set_distance(self, dist):
         """
-
         :param dist: the distance of this url from the ground truth
         :return: the distance
         """
@@ -167,41 +149,29 @@ class Crawl:
         self.id = args.start
         self.args = args
 
+    def extract_batches(pos, batch_sz):
+        CSV_PATH = "/Users/kennethyang/Desktop/repo/ECE-6612/data/phishtank_urls.csv"
+        df = pd.read_csv(CSV_PATH)
+        if pos > df.shape[0]:
+            raise (StopIteration('data exceeded!'))
+        else:
+            return df['url'][pos:pos + batch_sz]
+
     def crawl(self):
         """
-
         :param max_iter:
         :return: nothing
         """
-        table_instances = self.init_database()
+        # table_instances = self.init_database()
 
         for i in range(self.start, self.args.num_urls, self.batch_sz):
             print('batch: {} crawled'.format(i%self.batch_sz))
-            url_strings = data(i, self.batch_sz).tolist()
+            url_strings = Crawl.extract_batches(i, self.batch_sz).tolist()
             for j in range(len(url_strings)):
-                self.id = self.BFS(self.id, url_strings[j], url_strings[j], table_instances[self.args.url_table_name])
+                self.id = self.BFS(self.id, url_strings[j], url_strings[j])
 
-    def init_database(self):
-        print('Please wait... initializing Mongo database...')
-        db_client = access_db.connect()
-        table_instances = {}
-        if not access_db.check_if_db_exists(self.args.database_name):
-            db_instance = access_db.create_database(db_client, self.args.database_name)
-        else:
-            db_instance = access_db.get_db_instance(self.args.database_name)
-        if not access_db.check_if_table_exists(db_instance, self.args.url_table_name):
-            table_instance = access_db.create_table(db_instance, self.args.url_table_name)
-            table_instances[self.args.url_table_name] = access_db.create_table_schema(table_instance)
-        else:
-            table_instances[self.args.url_table_name] = access_db.get_table_instance(self.args.database_name, self.args.url_table_name)
-        print('Table initialization complete...')
-        print(table_instances)
-        return table_instances
-
-
-    def BFS(self, id, x, root_url, table_instances):
+    def BFS(self, id, x, root_url):
         """
-
         :param id: the index of the url
         :param x: the url string
         :param root_url: the root url
@@ -224,9 +194,24 @@ class Crawl:
                     if url.get_distance() < self.args.crawl_depth:
                         url.set_visited_status('GRAY')
                         url.set_parent_url(current_url)
-                        database_id = access_db.insert_into_table(table_instances[self.args.url_table_name], url.as_json())
-                        print('status: saved', 'database_id: {}'.format(database_id), 'url: ', url)
+
+                        # INITIALIZE DATABASE/COLLECTION
+                        Database.initialize('fullstack', 'phishing')
+
+                        # SAVE TO DATA
+                        post = Post(str(datetime.datetime.now()),
+                                    url.get_id(),
+                                    str(url.get_url()),
+                                    str(url.get_ip_address()),
+                                    str(url.get_root_url()),
+                                    str(url.get_parent_url()),
+                                    url.get_distance(),
+                                    str(url.get_content()))
+                        print('status: saved', 'url: ', url)
+                        post.save_to_mongo()
+
                         queue.append(url)
+
                     else:
                         break
             current_url.set_visited_status('BLACK')
@@ -262,8 +247,6 @@ class UpdateUrl:
         except(ConnectionResetError, urllib3.exceptions.MaxRetryError, ConnectionRefusedError,
                ConnectionAbortedError, ConnectionError) as err:
             print('url: {}, error: {}'.format(url, str(err)))
-        # if response.status not in [200, 320]:
-        #     print('url: {} not found: status: {}'.format(url.get_url(), response.status))
 
 
     def extract_links(self, Url):
@@ -328,7 +311,6 @@ class UpdateUrl:
 
     def create_URL_node(self, id, url_string, root_url=None):
         """
-
         :param id:
         :param url_string:
         :param root_url:
@@ -342,15 +324,6 @@ class UpdateUrl:
         self.update_url_neigbors(URL)
         URL.set_root_url(root_url)
         return URL
-
-
-def main(args):
-    url = 'https://stackexchange.com'
-    id = 0
-    root_url = 'https://www.people.com'
-    url = UpdateUrl().create_URL_node(id, url, url)
-    crawl = Crawl(args).BFS(id=id, x=url, root_url=url)
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Hyperparams')
@@ -383,4 +356,21 @@ if __name__ == '__main__':
     crawler.crawl()
 
 
+def main():
+    url = 'https://stackexchange.com'
+    id = 0
+    root_url = 'https://www.people.com'
+    url = UpdateUrl().create_URL_node(id, url, url)
+    crawl = Crawl(args).BFS(id=id, x=url, root_url=url)
 
+    # QUERY EXAMPLE
+    # content = Search.get_id("7c1980009a234c42b80a52801f6a60f7")
+    # print(content)
+
+    # TOTAL ENTRY COUNT EXAMPLE
+    # total_entries = Database.total_entries()
+    # print("TOTAL ENTRIES", total_entries)
+
+
+if __name__ == '__main__':
+    main()
