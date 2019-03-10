@@ -1,38 +1,32 @@
-import uuid
 from database import Database
-from datetime import datetime
 
 
 class Post(object):
 
-    def __init__(self,id=None, website_id, website_url, content, date=datetime.utcnow()):
-        # SELF GENERATE ID
-        self.id = uuid.uuid4().hex if id is None else id
-        self.website_id = website_id
-        self.website_url = website_url
-        self.content = content
-        self.create_date = date
-        self.outbound_urls = outbound_urls
-        self.num_symbols_in_url = num_symbols_in_url
+    def __init__(self, timestamp, global_id, url, ip_address, root_url, parent_url, distance_from_root, url_content):
+        self.timestamp = timestamp
+        self.global_id = global_id
+        self.url = url
+        self.ip_address = ip_address
+        self.root_url = root_url
+        self.parent_url = parent_url
+        self.distance_from_root = distance_from_root
+        self.url_content = url_content
 
     def save_to_mongo(self):
         Database.insert(data=self.json())
 
     def json(self):
         return {
-            'id': self.id,
-            'website_id': self.website_id,
-            'website_url': self.website_url,
-            'content': self.content,
-            'date': self.create_date,
-            'outbound_urls': self.outbound_urls,
-            'num_symbols_in_url' = self.num_symbols_in_url
+            'timestamp': self.timestamp,
+            'global_id': self.global_id,
+            'url': self.url,
+            'ip_address': self.ip_address,
+            'root_url': self.root_url,
+            'parent_url': self.parent_url,
+            'distance_from_root': self.distance_from_root,
+            'url_content': self.url_content
         }
 
-    @staticmethod
-    def from_mongo(id):
-        return Database.find_one(query={'id': id})
 
-    @staticmethod
-    def from_website(website_id):
-        return [post for post in Database.find(query={'website_id': website_id})]
+
