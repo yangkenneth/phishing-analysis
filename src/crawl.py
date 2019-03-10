@@ -1,7 +1,7 @@
 from datetime import datetime
 from database import Database
-from models.post import Post
-from models.search import Search
+from post import Post
+from search import Search
 import urllib3
 from bs4 import BeautifulSoup
 import socket
@@ -150,7 +150,7 @@ class Crawl:
         self.args = args
 
     def extract_batches(pos, batch_sz):
-        CSV_PATH = "/Users/kennethyang/Desktop/repo/ECE-6612/data/phishtank_urls.csv"
+        CSV_PATH = "ENTER_PATH_HERE"
         df = pd.read_csv(CSV_PATH)
         if pos > df.shape[0]:
             raise (StopIteration('data exceeded!'))
