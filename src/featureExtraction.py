@@ -77,7 +77,7 @@ class usefulFeatures(object):
         return len(m)
 
     def getHaveIpAddress(self):
-        flag=re.search('(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\/)|'  #IPv4
+        flag = re.search('(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\/)|'  #IPv4
                     '((0x[0-9a-fA-F]{1,2})\\.(0x[0-9a-fA-F]{1,2})\\.(0x[0-9a-fA-F]{1,2})\\.(0x[0-9a-fA-F]{1,2})\\/)'  #IPv4
                     '(?:[a-fA-F0-9]{1,4}:){7}[a-fA-F0-9]{1,4}',self.url)     #Ipv6
         if flag:
@@ -220,6 +220,7 @@ class usefulFeatures(object):
     def getPageRank(self):
         pass
     def getGoogleIndex(self):
+        # https://developers.google.com/search/apis/indexing-api/v3/quickstart
         pass
     def getLinksPointingToPage(self):
         pass
@@ -228,8 +229,6 @@ class usefulFeatures(object):
 
 #to test your suggested trash method :)
 if __name__ == '__main__':
-
-
     testcase1 = "http://www.coc-ga-tech.edu" # <= type url that you wanna test
     testcase2 = "https://tinyurl.com/gatech"
     x=usefulFeatures(testcase1) # intialize the feature extraction class
