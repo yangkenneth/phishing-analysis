@@ -6,7 +6,7 @@ import urllib3
 from bs4 import BeautifulSoup
 import socket
 import pandas as pd
-
+import os 
 import re
 import argparse
 import datetime
@@ -150,6 +150,7 @@ class Crawl:
         self.args = args
 
     def extract_batches(pos, batch_sz):
+
         CSV_PATH = "/Users/kennethyang/Desktop/repo/ECE-6612/data/phishtank_urls.csv"
         df = pd.read_csv(CSV_PATH)
         if pos > df.shape[0]:
@@ -351,25 +352,40 @@ if __name__ == '__main__':
                         help='number of retry counts')
     parser.add_argument('--start', nargs='?', type=int, default=15,
                         help='url index to start from')
-    args = parser.parse_args()
-    crawler = Crawl(args)
-    crawler.crawl()
+    # args = parser.parse_args()
+    # crawler = Crawl(args)
+    # crawler.crawl()
 
 
 def main():
-    url = 'https://stackexchange.com'
-    id = 0
-    root_url = 'https://www.people.com'
-    url = UpdateUrl().create_URL_node(id, url, url)
-    crawl = Crawl(args).BFS(id=id, x=url, root_url=url)
+    # url = 'https://stackexchange.com'
+    # id = 0
+    # root_url = 'https://www.people.com'
+    # url = UpdateUrl().create_URL_node(id, url, url)
+    # crawl = Crawl(args).BFS(id=id, x=url, root_url=url)
 
-    # QUERY EXAMPLE
-    # content = Search.get_id("7c1980009a234c42b80a52801f6a60f7")
-    # print(content)
+    # INITIALIZE DATABASE
+    Database.initialize('fullstack', 'phishing')
+
+    # QUERY GENERATED ID
+    generated_id = Search.from_id(24)
+    print(generated_id)
+
+    # QUERY GLOBAL ID
+    global_id = Search.from_global_id("5c85839cbbf8f53182163e4d")
+    print(global_id)
+
+    # QUERY URL
+    url = Search.from_url("https://storkbr.com/")
+    print(url)
 
     # TOTAL ENTRY COUNT EXAMPLE
-    # total_entries = Database.total_entries()
-    # print("TOTAL ENTRIES", total_entries)
+    total_entries = Database.total_entries()
+    print("TOTAL ENTRIES:", total_entries)
+
+    # OUTPUT CSV FILE 
+    os.system("mongoexport -h localhost -d fullstack -c phishing --type=csv --fields _id,url,ip_address,root_url,parent_url,distance_from_root --out phishing.csv")
+
 
 
 if __name__ == '__main__':
