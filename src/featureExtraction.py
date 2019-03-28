@@ -25,11 +25,18 @@ class usefulFeatures(object):
         self.url=url
 
 
-
+    # External objects such as images within a webpage are loaded from another Domain.
     def getReqUrl(self):
+        """
+        :rtype: bool
+        """
         pass
 
+    # URLs created less than 1 year or will expire within the coming 3 months from WHOIS.
     def getAgeOfDomain(self):
+        """
+        :rtype: int
+        """
         try:
             domain_name = whois.whois(urlparse(self.url).netloc)
             creation_date = domain_name.creation_date
@@ -53,18 +60,29 @@ class usefulFeatures(object):
         except:
             return 2
 
+    # The URL includes "https" or not
     def getHasHttps(self):
+        """
+        :rtype: int
+        """
         m = re.search('https', self.url)
         if m == None:
-            return "noHttps"
+            return 2     # phishing
         else:
-            return "foundHttps"
+            return 0     # potential legitimate
 
+    # The URL https is fake or not, when the URL has "https"
     def getFakeHttps(self):
+        """
+        :rtype: bool
+        """
         pass
 
-
+    # The Url string length
     def getUrlLength(self):
+        """
+        :rtype: int
+        """
         if len(self.url) < 54:
             return 0
         elif len(self.url)> 75:
@@ -72,41 +90,50 @@ class usefulFeatures(object):
         else:
             return 1
 
+    # The Url includes how many '-'
     def getPrefixSuffix(self):
+        """
+        :rtype: int
+        """
         m = re.findall('-', self.url)
         return len(m)
 
+    # The Url includes direct IP address or not
     def getHaveIpAddress(self):
+        """
+        :rtype: int
+        """
         flag = re.search('(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\/)|'  #IPv4
                     '((0x[0-9a-fA-F]{1,2})\\.(0x[0-9a-fA-F]{1,2})\\.(0x[0-9a-fA-F]{1,2})\\.(0x[0-9a-fA-F]{1,2})\\/)'  #IPv4
                     '(?:[a-fA-F0-9]{1,4}:){7}[a-fA-F0-9]{1,4}',self.url)     #Ipv6
         if flag:
-            return 2
+            return 2    # phishing
         else:
-            return 0
+            return 0    # legitimate
 
+    # The Url includes '@' symbol or not
     def getHaveAtSymbol(self):
+        """
+        :rtype: int
+        """
         m = re.search('@', self.url)
         if m == None:
-            return "no@Symbol"
+            return 0   # legitimate
         else:
-            return "found@Symbol"
+            return 2   # phishing
 
+    # The Url includes '//' redirect or not
     def getIfRedirects(self):
         if "//" in urlparse(self.url).path:
             return 2            # phishing
         else:
             return 0            # legitimate
 
-    # def getIsShortenUrl(url, service_dict):
-    #     mList = [re.search(x, url) for x in service_dict]
-    #     for m in mList:
-    #         if m != None:
-    #             return True
-    #     return False
-
-
+    # The Url uses shortenUrl service or not
     def getIsShortenUrl(self):
+        """
+        :rtype: int
+        """
         match=re.search('bit\.ly|goo\.gl|shorte\.st|go2l\.ink|x\.co|ow\.ly|t\.co|tinyurl|tr\.im|is\.gd|cli\.gs|'
                     'yfrog\.com|migre\.me|ff\.im|tiny\.cc|url4\.eu|twit\.ac|su\.pr|twurl\.nl|snipurl\.com|'
                     'short\.to|BudURL\.com|ping\.fm|post\.ly|Just\.as|bkite\.com|snipr\.com|fic\.kr|loopt\.us|'
@@ -115,15 +142,19 @@ class usefulFeatures(object):
                     'q\.gs|is\.gd|po\.st|bc\.vc|twitthis\.com|u\.to|j\.mp|buzurl\.com|cutt\.us|u\.bb|yourls\.org|'
                     'x\.co|prettylinkpro\.com|scrnch\.me|filoops\.info|vzturl\.com|qr\.net|1url\.com|tweez\.me|v\.gd|tr\.im|link\.zip\.net',self.url)
         if match:
-            return 2
+            return 2        # phishing
         else:
-            return 0
+            return 0        # legitimate
 
-    ## TODO
+
     def getPageRank(self):
         pass
 
+    # The Url domain expires less than 1 year or not
     def getDomainRegLen(self):
+        """
+        :rtype: int
+        """
         try:
             domain_name = whois.whois(urlparse(self.url).netloc)
             expiration_date = domain_name.expiration_date
@@ -150,14 +181,22 @@ class usefulFeatures(object):
         except:
             return 2
 
+    # The DNS record of Url exists or not
     def getDNSRecordExists(self):
+        """
+        :rtype: int
+        """
         try:
             domain_name = whois.whois(urlparse(self.url).netloc)
             return 0
         except:
             return 2
 
+    # The Url has low website traffic or not, from Alexa database
     def getWebTrafficAlexa(self):
+        """
+        :rtype: int
+        """
         try:
             rank = BeautifulSoup(urllib.request.urlopen("http://data.alexa.com/data?cli=10&dat=s&url=" + self.url).read(), "xml").find("REACH")['RANK']
         except TypeError:
@@ -172,7 +211,11 @@ class usefulFeatures(object):
         else:
             return 1
 
-    def getNumSubdomains(self):
+    # The Url has multiple sub domians or not
+    def getMultSubdomains(self):
+        """
+        :rtype: int
+        """
         if self.url.count(".") < 3:
             return 0
         elif self.url.count(".") == 3:
@@ -180,48 +223,76 @@ class usefulFeatures(object):
         else:
             return 2
 
+    # The Url has '-' or not
     def getHasHiphen(self):
+        """
+        :rtype: int
+        """
         if "-" in urlparse(self.url).netloc:
-            return 2
+            return 2    # phishing
         else:
-            return 0
+            return 0    # legitimate
 
+    # The domain of anchor(<a> tag) is different from that of the website.
     def getUrlAnchor(self):
         pass
 
+    # Phishers used JavaScript to display a fake URL in the status bar to the users.
     def getOnmouseover(self):
         pass
 
+    # The host name in URL does not match its claimed identity from WHOIS.
     def getAbnormalUrl(self):
         pass
+
+    # The Url Website ask users to submit their credentials through a popup window.
     def getPopUpWidnow(self):
         pass
 
+    # Server Form Handler(SFH) that are empty string or contains "about:blank" are considered doubtful
     def getSFH(self):
         pass
+
+    # Phishers used JavaScript to disable the right click function.
     def getRightClick(self):
         pass
+
+    # '//' redirect should appear on the 6th/7th -http/https if they appear 
     def getDoubleSlashRedirecting(self):
         pass
+
+    # 
     def getSSLFinalState(self):
         pass
 
+    # If favicon loaded from different external domain or not
     def getFavicon(self):
         pass
+
+    # check the port, e.g., xxx.com:8080
     def getPort(self):
         pass
 
+    # https token part of the domain part of url
     def getHTTPSToken(self):
         pass
+
     def getLinksAndTags(self):
         pass
+
     def getSubmittingToEmail(self):
         pass
+
+    # get website Page Rank ranking from Google
     def getPageRank(self):
         pass
+
+    # get website Google index
     def getGoogleIndex(self):
         # https://developers.google.com/search/apis/indexing-api/v3/quickstart
         pass
+
+
     def getLinksPointingToPage(self):
         pass
     def getStatisticalReport(self):
