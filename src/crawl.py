@@ -1,15 +1,16 @@
 from datetime import datetime
 from database import Database
-from models.post import Post
-from models.search import Search
+from post import Post
 import urllib3
 from bs4 import BeautifulSoup
 import socket
 import pandas as pd
-import os 
+
 import re
 import argparse
 import datetime
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 class Url:
@@ -31,8 +32,8 @@ class Url:
 
 
     def __str__(self):
-        return str('id: {}, url: {}, ip_address: {}, root_url: {}, parent_url: {}, distance_from_root: {}, \n'.format(
-            self.get_id(), self.get_url(), self.get_ip_address(), self.get_parent_url(), self._root_url, self._distance))
+        return str('id: {}, url: {}, root_url: {}, parent_url: {}, distance_from_root: {}, \n'.format(
+            self.get_id(), str(self.get_url()).encode('latin-1', 'ignore'), str(self.get_parent_url()).encode('latin-1', 'ignore'), str(self.get_root_url()).encode('latin-1','ignore'), self._distance))
 
     def __iter__(self):
         yield 'time_stamp',         str(datetime.datetime.now())
@@ -150,8 +151,7 @@ class Crawl:
         self.args = args
 
     def extract_batches(pos, batch_sz):
-
-        CSV_PATH = "/Users/kennethyang/Desktop/repo/ECE-6612/data/phishtank_urls.csv"
+        CSV_PATH = args.data_loc
         df = pd.read_csv(CSV_PATH)
         if pos > df.shape[0]:
             raise (StopIteration('data exceeded!'))
@@ -178,11 +178,29 @@ class Crawl:
         :param root_url: the root url
         :return: the current id
         """
+        # INITIALIZE DATABASE/COLLECTION
+        Database.initialize(args.database_name, args.url_table_name)
         x = UpdateUrl(self.args).create_URL_node(id=id, url_string=x, root_url=root_url)
         queue = []
         x.set_visited_status('GRAY')
         x.set_distance(0)
         queue.append(x)
+
+        try:
+            post = Post(str(datetime.datetime.now()),
+                x.get_id(),
+                str(x.get_url()),
+                str(x.get_ip_address()),
+                str(x.get_root_url()),
+                str(x.get_parent_url()),
+                x.get_distance(),
+                str(x.get_content()))
+            print('status: saved', 'url: ', x)
+            post.save_to_mongo()
+        except(UnicodeEncodeError) as err:
+            print('UnicodeEncodeError Occured!')
+
+        id = id + 1
         while len(queue) > 0:
             current_url = queue.pop(0)
             for url in current_url.get_neighbors():
@@ -196,11 +214,8 @@ class Crawl:
                         url.set_visited_status('GRAY')
                         url.set_parent_url(current_url)
 
-                        # INITIALIZE DATABASE/COLLECTION
-                        Database.initialize('fullstack', 'phishing')
-
-                        # SAVE TO DATA
-                        post = Post(str(datetime.datetime.now()),
+                        try:
+                            post = Post(str(datetime.datetime.now()),
                                     url.get_id(),
                                     str(url.get_url()),
                                     str(url.get_ip_address()),
@@ -208,9 +223,11 @@ class Crawl:
                                     str(url.get_parent_url()),
                                     url.get_distance(),
                                     str(url.get_content()))
-                        print('status: saved', 'url: ', url)
-                        post.save_to_mongo()
 
+                            print('status: saved', 'url: ', url)
+                            post.save_to_mongo()
+                        except(UnicodeEncodeError) as err:
+                            print('UnicodeEncodeError Occured!')
                         queue.append(url)
 
                     else:
@@ -241,14 +258,13 @@ class UpdateUrl:
 
         url = Url.get_url()
         try:
-            http = urllib3.PoolManager()
+            http = urllib3.PoolManager(timeout=timeout)
             response = http.request('GET', url)
             soup = BeautifulSoup(response.data, 'html.parser')
             return soup
-        except(ConnectionResetError, urllib3.exceptions.MaxRetryError, ConnectionRefusedError,
-               ConnectionAbortedError, ConnectionError) as err:
-            print('url: {}, error: {}'.format(url, str(err)))
-
+        except(UnicodeEncodeError, KeyError, urllib3.exceptions.LocationValueError, ConnectionResetError, urllib3.exceptions.MaxRetryError, ConnectionRefusedError, ConnectionAbortedError, ConnectionError) as err:
+            print('an error occured with: {}'.format(str(url.encode('utf8', 'ignore'))))
+            return 
 
     def extract_links(self, Url):
         """
@@ -295,20 +311,24 @@ class UpdateUrl:
         :param Url: the Url class
         :return: nothing
         """
+        return ' '
         host = re.match('^([^.]+)\..*$', str(Url.get_url())).group()
         hostname = host.split('.')[-2:]
         if hostname[1] not in ['com', 'edu', 'net',  'org']:
-            hostname = host.split('/')[2]
+            try:
+                hostname = host.split('/')[2]
+            except(IndexError) as err:
+                print(err)
         else:
             hostname = hostname[0]+'.'+hostname[1]
         if hostname.startswith('https'):
             hostname = hostname[8:]
         try:
-            ip_address = socket.gethostbyname(hostname)
+            ip_address = socket.gethostbyname(hostname.encode('idna'))
             Url.set_ip_address(ip_address)
-        except(socket.gaierror) as err:
+        except(UnicodeError, socket.gaierror, socket.error) as err:
             print(hostname + ': ' + str(err))
-
+        
 
     def create_URL_node(self, id, url_string, root_url=None):
         """
@@ -328,7 +348,7 @@ class UpdateUrl:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Hyperparams')
-    parser.add_argument('--num_neighbors', nargs='?', type=int, default=5,
+    parser.add_argument('--num_neighbors', nargs='?', type=int, default=0,
                         help='max number of links to crawl in a new url')
     parser.add_argument('--crawl_depth', nargs='?', type=int, default=3,
                         help='the depth of crawling a url')
@@ -336,57 +356,36 @@ if __name__ == '__main__':
                         help='the url index to resume crawling')
     parser.add_argument('--batch_size', nargs='?', type=int, default=15,
                         help='Batch Size')
-    parser.add_argument('--database_name', nargs='?', type=str, default='phisermen_bank',
+    parser.add_argument('--database_name', nargs='?', type=str, default='fullstack',
                         help='the name of the Mongo database we will use')
-    parser.add_argument('--url_table_name', nargs='?', type=str, default='url_table',
+    parser.add_argument('--url_table_name', nargs='?', type=str, default='phishing',
                         help='the name of the ip_table')
+    parser.add_argument('--data_loc', nargs='?', type=str, default='~/Desktop/ECE-6612/src/phishing.csv',
+                        help='data location')
     parser.add_argument('--features_table_name', nargs='?', type=str, default='feature_table',
                         help='the name of the feature_table')
     parser.add_argument('--num_urls', nargs='?', type=int, default=10000,
                         help='total number of urls o list to crawl')
     parser.add_argument('--http_timeout', nargs='?', type=int, default=5,
                         help='timeout for http requests')
-    parser.add_argument('--socket_timeout', nargs='?', type=int, default=10,
+    parser.add_argument('--socket_timeout', nargs='?', type=int, default=3,
                         help='timeout for so')
     parser.add_argument('--http_retries', nargs='?', type=int, default=1,
                         help='number of retry counts')
-    parser.add_argument('--start', nargs='?', type=int, default=15,
+    parser.add_argument('--start', nargs='?', type=int, default=4715,
                         help='url index to start from')
-    # args = parser.parse_args()
-    # crawler = Crawl(args)
-    # crawler.crawl()
+    args = parser.parse_args()
+    crawler = Crawl(args)
+    crawler.crawl()
 
 
 def main():
-    # url = 'https://stackexchange.com'
-    # id = 0
-    # root_url = 'https://www.people.com'
-    # url = UpdateUrl().create_URL_node(id, url, url)
-    # crawl = Crawl(args).BFS(id=id, x=url, root_url=url)
-
-    # INITIALIZE DATABASE
-    Database.initialize('fullstack', 'phishing')
-
-    # QUERY GENERATED ID
-    generated_id = Search.from_id(24)
-    print(generated_id)
-
-    # QUERY GLOBAL ID
-    global_id = Search.from_global_id("5c85839cbbf8f53182163e4d")
-    print(global_id)
-
-    # QUERY URL
-    url = Search.from_url("https://storkbr.com/")
-    print(url)
-
-    # TOTAL ENTRY COUNT EXAMPLE
-    total_entries = Database.total_entries()
-    print("TOTAL ENTRIES:", total_entries)
-
-    # OUTPUT CSV FILE 
-    os.system("mongoexport -h localhost -d fullstack -c phishing --type=csv --fields _id,url,ip_address,root_url,parent_url,distance_from_root --out phishing.csv")
+    url = 'https://stackexchange.com'
+    id = 0
+    root_url = 'https://www.people.com'
+    url = UpdateUrl().create_URL_node(id, url, url)
+    crawl = Crawl(args).BFS(id=id, x=url, root_url=url)
 
 
-
-if __name__ == '__main__':
-    main()
+#if __name__ == '__main__':
+#    main()
