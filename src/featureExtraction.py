@@ -15,11 +15,11 @@ import requests
 import urllib.request
 from urllib.error import HTTPError
 from datetime import datetime
-
-
+import csv
+import pandas as pd
+from itertools import islice
 
 ## This class contains methods that gets url and return useful featrues
-
 class usefulFeatures(object):
     def __init__(self,url):
         self.url=url
@@ -300,8 +300,60 @@ class usefulFeatures(object):
 
 #to test your suggested trash method :)
 if __name__ == '__main__':
+	# run test cases
     testcase1 = "http://www.coc-ga-tech.edu" # <= type url that you wanna test
     testcase2 = "https://tinyurl.com/gatech"
     x=usefulFeatures(testcase1) # intialize the feature extraction class
     getvalue=x.getDomainRegLen() #Todo change this line add your method instead
     print(getvalue) #see the output
+
+    
+    # read csv file and output feature csv
+    # read first 100 lines for now
+    URL = []
+    ageOfDomain = []
+    hasHttps = []
+    urlLength = []
+    prefixSuffix = []
+    hasIP = []
+    hasAt = []
+    redirects = []
+    shortenUrl = []
+    domainRegLength = []
+    DNSrecord = []
+    webTraffixAlexa = []
+    multSubDomains = []
+    hasHiphen = []
+
+
+    with open('phishinginfo.csv') as csvfile:
+    	reader = csv.DictReader(csvfile)
+    	for i,row in enumerate(reader):
+        	currUrl = row['url']
+        	allFeatures = usefulFeatures(currUrl)
+
+        	URL.append(currUrl)
+        	ageOfDomain.append(allFeatures.getAgeOfDomain())
+        	hasHttps.append(allFeatures.getHasHttps())
+        	urlLength.append(allFeatures.getUrlLength())
+        	prefixSuffix.append(allFeatures.getPrefixSuffix())
+        	hasIP.append(allFeatures.getHaveIpAddress())
+        	hasAt.append(allFeatures.getHaveAtSymbol())
+        	redirects.append(allFeatures.getIfRedirects())
+        	shortenUrl.append(allFeatures.getIsShortenUrl())
+        	domainRegLength.append(allFeatures.getDomainRegLen())
+        	DNSrecord.append(allFeatures.getDNSRecordExists())
+        	webTraffixAlexa.append(allFeatures.getWebTrafficAlexa())
+        	multSubDomains.append(allFeatures.getMultSubdomains())
+        	hasHiphen.append(allFeatures.getHasHiphen())
+
+
+        	if(i >= 100):
+        		break
+
+    # build feature table Dataframe
+    data = {'URL':URL,'ageOfDomain':ageOfDomain,'hasHttps':hasHttps,'urlLength':urlLength,'prefixSuffix':prefixSuffix,'hasIP':hasIP,'hasAt':hasAt,'redirects':redirects,'shortenUrl':shortenUrl,'domainRegLength':domainRegLength,'DNSrecord':DNSrecord,'webTraffixAlexa':webTraffixAlexa,'multSubDomains':multSubDomains,'hasHiphen':hasHiphen}
+    df = pd.DataFrame(data)
+    df.to_csv('features-100.csv')
+    # print(df)
+    
