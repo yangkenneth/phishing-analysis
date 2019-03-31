@@ -18,12 +18,32 @@ from datetime import datetime
 import csv
 import pandas as pd
 from itertools import islice
+from models.search import Search
+from database import Database
 
 ## This class contains methods that gets url and return useful featrues
 class usefulFeatures(object):
     def __init__(self,url):
         self.url=url
 
+def getInputFields():
+    address = Database.find()
+    df = pd.DataFrame()
+
+    for var in address:
+        if var is not None:
+            count = 0
+            content = var['url_content']
+            url = Search.from_content(content)['url']
+            soup = BeautifulSoup(content, "html.parser")
+            password = soup.findAll('input', {'type': 'password'})
+            for input in password:
+                count = count + 1
+            text = soup.findAll('input', {'type': 'text'})
+            for input in text:
+                count = count + 1
+            df = df.append({'url': url, 'input_count': count}, ignore_index=True)
+    print(df)
 
     # External objects such as images within a webpage are loaded from another Domain.
     def getReqUrl(self):

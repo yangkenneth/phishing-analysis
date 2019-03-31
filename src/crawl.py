@@ -2,6 +2,8 @@ from datetime import datetime
 from database import Database
 from models.post import Post
 from models.search import Search
+import featureExtraction
+
 import urllib3
 from bs4 import BeautifulSoup
 import socket
@@ -368,25 +370,30 @@ def main():
     Database.initialize('fullstack', 'phishing')
 
     # QUERY GENERATED ID
-    generated_id = Search.from_id(24)
-    print(generated_id)
+    # generated_id = Search.from_id(24)
+    # print(generated_id)
 
     # QUERY GLOBAL ID
-    global_id = Search.from_global_id("5c85839cbbf8f53182163e4d")
-    print(global_id)
+    # global_id = Search.from_global_id("5c85839cbbf8f53182163e4d")
+    # print(global_id)
 
     # QUERY URL
-    url = Search.from_url("https://storkbr.com/")
-    print(url)
+    # url = Search.from_url("https://storkbr.com/")
+    # print(url)
 
     # TOTAL ENTRY COUNT EXAMPLE
-    total_entries = Database.total_entries()
-    print("TOTAL ENTRIES:", total_entries)
+    # total_entries = Database.total_entries()
+    # print("TOTAL ENTRIES:", total_entries)
 
-    # OUTPUT CSV FILE 
-    os.system("mongoexport -h localhost -d fullstack -c phishing --type=csv --fields _id,url,ip_address,root_url,parent_url,distance_from_root --out phishing.csv")
+    # EXPORT MONGODB COLLECTION
+    # os.system("mongoexport -h localhost -d fullstack -c phishing --type=csv --fields _id,url,ip_address,root_url,parent_url,distance_from_root --out phishing.csv")
 
+    # ITERATE AND GET URL_CONTENT
+    # example = Search.url_content()
+    # print(example)
 
+    # FIND INPUT FIELDS IN HTML/SAVE IN PANDAS DATAFRAME
+    # featureExtraction.getInputFields()
 
 if __name__ == '__main__':
     main()
