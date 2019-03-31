@@ -16,6 +16,12 @@ class Search(object):
     def from_url(url):
         return Database.find_one(query={'url': url})
 
+    @staticmethod
+    def from_content(url_content):
+        return Database.find_one(query={'url_content': url_content})
 
-
-
+    @staticmethod
+    def url_content():
+        address = Database.find()
+        for var in address:
+            print(var['url_content'])
