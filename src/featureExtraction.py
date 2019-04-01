@@ -36,6 +36,8 @@ def getInputFields():
             count = 0
             content = var['url_content']
             url = Search.from_content(content)['url']
+            distance = Search.from_url(url)['distance_from_root']
+
             soup = BeautifulSoup(content, "html.parser")
             password = soup.findAll('input', {'type': 'password'})
             for input in password:
@@ -43,7 +45,7 @@ def getInputFields():
             text = soup.findAll('input', {'type': 'text'})
             for input in text:
                 count = count + 1
-            df = df.append({'url': url, 'input_count': count}, ignore_index=True)
+            df = df.append({'url': url, 'input_count': count, 'distance': distance}, ignore_index=True)
     print(df)
 
     # External objects such as images within a webpage are loaded from another Domain.
