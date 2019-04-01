@@ -7,6 +7,7 @@
 # 2 = highest probability of phishing
 # ---------------
 
+import time
 import re
 from urllib.parse import urlparse,urlencode
 import whois
