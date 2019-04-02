@@ -452,12 +452,15 @@ if __name__ == '__main__':
     hasHiphen = []
 
     #please specify input filename here
-    urlFileName = 'phishinginfo.csv'
+    urlFileName = 'alexa-5000.csv'
 
     with open(urlFileName) as csvfile:
         reader = csv.DictReader(csvfile)
         for i,row in enumerate(reader):
             currUrl = row['url']
+            # add http:// prefix if it does not have this
+            if (len(currUrl) <= 7 or currUrl[0:6] != 'http://' or currUrl[0:7] != 'https://'):
+                currUrl = 'http://' + currUrl
             allFeatures = usefulFeatures(currUrl)
 
             URL.append(currUrl)
@@ -479,13 +482,13 @@ if __name__ == '__main__':
             hasHiphen.append(allFeatures.getHasHiphen())
             print("generating features for entry ", i)
             # top k/full list
-            if(i >= 100):
-                break
+            # if(i >= 100):
+            #     break
 
     # build feature table Dataframe
     data = {'URL':URL,'ageOfDomain':ageOfDomain,'hasHttps':hasHttps,'urlLength':urlLength,'prefixSuffix':prefixSuffix,'hasIP':hasIP,'hasAt':hasAt,'redirects':redirects,'shortenUrl':shortenUrl,'domainRegLength':domainRegLength,'DNSrecord':DNSrecord,'webTraffixAlexa':webTraffixAlexa,'multSubDomains':multSubDomains,'hasHiphen':hasHiphen}
     df = pd.DataFrame(data)
     # please specify output filename here
-    df.to_csv('features-100.csv')
+    df.to_csv('features-alexa-5000.csv')
     # print(df)
     
