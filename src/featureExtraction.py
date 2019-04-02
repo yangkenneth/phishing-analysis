@@ -55,136 +55,136 @@ def getInputFields():
         """
         pass
 
-	# Returns: (DNSRecordExists, AgeOfDomain, DomainRegLen)
-	# DNSRecordExists: 0-exists, 2-doesn't
-	# AgeOfDomain: 0->1 year, 2-<=1 year or doesn't exist in whois
-	# DomainRegLen: 0->1 year, 2-<=1 year or doesn't exist in whois
-	def WhoisQuery(self):
-		"""
-		:rtype: (int,int,int)
-		:returns: (DNSRecordExists, AgeOfDomain, DomainRegLen)
-		"""
-		def getDomainRegLen(domain_name):
-			"""
-			:rtype: int
-			"""
-			try:
-				expiration_date = domain_name.expiration_date
-				creation_date = domain_name.creation_date
-				today = time.strftime('%Y-%m-%d')
-				today = datetime.strptime(today, '%Y-%m-%d')
-				if expiration_date is None or creation_date is None:
-					return 2
-				elif type(expiration_date) is list:
-					creation_dates = domain_name.creation_date
-					expiration_dates = domain_name.expiration_date
-					for i in range(len(creation_dates)):
-						creation_date = creation_dates[i]
-						expiration_date = expiration_dates[i]
-						if (isinstance(creation_date,str) or isinstance(expiration_date,str)):
-							try:
-								creation_date = datetime.strptime(creation_date,'%Y-%m-%d')
-								expiration_date = datetime.strptime(expiration_date,"%Y-%m-%d")
-							except:
-								return 1
-						registration_length = abs((expiration_date - creation_date).days)
-						if registration_length / 365 <= 1:
-							return 2
-					return 0
-				else:
-					creation_date = domain_name.creation_date
-					expiration_date = domain_name.expiration_date
-					if (isinstance(creation_date,str) or isinstance(expiration_date,str)):
-						try:
-							creation_date = datetime.strptime(creation_date,'%Y-%m-%d')
-							expiration_date = datetime.strptime(expiration_date,"%Y-%m-%d")
-						except:
-							return 1
-					registration_length = abs((expiration_date - creation_date).days)
-					if registration_length / 365 <= 1:
-						return 2
-					else:
-						return 0
-			except:
-				return 2
+    # Returns: (DNSRecordExists, AgeOfDomain, DomainRegLen)
+    # DNSRecordExists: 0-exists, 2-doesn't
+    # AgeOfDomain: 0->1 year, 2-<=1 year or doesn't exist in whois
+    # DomainRegLen: 0->1 year, 2-<=1 year or doesn't exist in whois
+    def WhoisQuery(self):
+        """
+        :rtype: (int,int,int)
+        :returns: (DNSRecordExists, AgeOfDomain, DomainRegLen)
+        """
+        def getDomainRegLen(domain_name):
+            """
+            :rtype: int
+            """
+            try:
+                expiration_date = domain_name.expiration_date
+                creation_date = domain_name.creation_date
+                today = time.strftime('%Y-%m-%d')
+                today = datetime.strptime(today, '%Y-%m-%d')
+                if expiration_date is None or creation_date is None:
+                    return 2
+                elif type(expiration_date) is list:
+                    creation_dates = domain_name.creation_date
+                    expiration_dates = domain_name.expiration_date
+                    for i in range(len(creation_dates)):
+                        creation_date = creation_dates[i]
+                        expiration_date = expiration_dates[i]
+                        if (isinstance(creation_date,str) or isinstance(expiration_date,str)):
+                            try:
+                                creation_date = datetime.strptime(creation_date,'%Y-%m-%d')
+                                expiration_date = datetime.strptime(expiration_date,"%Y-%m-%d")
+                            except:
+                                return 1
+                        registration_length = abs((expiration_date - creation_date).days)
+                        if registration_length / 365 <= 1:
+                            return 2
+                    return 0
+                else:
+                    creation_date = domain_name.creation_date
+                    expiration_date = domain_name.expiration_date
+                    if (isinstance(creation_date,str) or isinstance(expiration_date,str)):
+                        try:
+                            creation_date = datetime.strptime(creation_date,'%Y-%m-%d')
+                            expiration_date = datetime.strptime(expiration_date,"%Y-%m-%d")
+                        except:
+                            return 1
+                    registration_length = abs((expiration_date - creation_date).days)
+                    if registration_length / 365 <= 1:
+                        return 2
+                    else:
+                        return 0
+            except:
+                return 2
 
-		def getAgeOfDomain(domain_name):
-			"""
-			:rtype: int
-			"""
-			try:
-				expiration_date = domain_name.expiration_date
-				today = time.strftime('%Y-%m-%d')
-				today = datetime.strptime(today, '%Y-%m-%d')
-				if expiration_date is None:
-					return 2
-				elif type(expiration_date) is list:
-					creation_dates = domain_name.creation_date
-					expiration_dates = domain_name.expiration_date
-					for i in range(len(creation_dates)):
-						creation_date = creation_dates[i]
-						expiration_date = expiration_dates[i]
-						if (isinstance(creation_date,str) or isinstance(expiration_date,str)):
-							try:
-								creation_date = datetime.strptime(creation_date,'%Y-%m-%d')
-								expiration_date = datetime.strptime(expiration_date,"%Y-%m-%d")
-							except:
-								return 1
-						registration_length = abs((expiration_date - today).days)
-						if registration_length / 365 <= 1:
-							return 2
-					return 0
-				else:
-					creation_date = domain_name.creation_date
-					expiration_date = domain_name.expiration_date
-					if (isinstance(creation_date,str) or isinstance(expiration_date,str)):
-						try:
-							creation_date = datetime.strptime(creation_date,'%Y-%m-%d')
-							expiration_date = datetime.strptime(expiration_date,"%Y-%m-%d")
-						except:
-							return 1
-					registration_length = abs((expiration_date - today).days)
-					if registration_length / 365 <= 1:
-						return 2
-					else:
-						return 0
-			except:
-				return 2
-		try:
-			domain_name = whois.whois(urlparse(self.url).netloc)
-			AgeOfDomain = getAgeOfDomain(domain_name)
-			DomainRegLen = getDomainRegLen(domain_name)
-			return (0, AgeOfDomain, DomainRegLen)
-		except:
-			return (2, 2, 2)
+        def getAgeOfDomain(domain_name):
+            """
+            :rtype: int
+            """
+            try:
+                expiration_date = domain_name.expiration_date
+                today = time.strftime('%Y-%m-%d')
+                today = datetime.strptime(today, '%Y-%m-%d')
+                if expiration_date is None:
+                    return 2
+                elif type(expiration_date) is list:
+                    creation_dates = domain_name.creation_date
+                    expiration_dates = domain_name.expiration_date
+                    for i in range(len(creation_dates)):
+                        creation_date = creation_dates[i]
+                        expiration_date = expiration_dates[i]
+                        if (isinstance(creation_date,str) or isinstance(expiration_date,str)):
+                            try:
+                                creation_date = datetime.strptime(creation_date,'%Y-%m-%d')
+                                expiration_date = datetime.strptime(expiration_date,"%Y-%m-%d")
+                            except:
+                                return 1
+                        registration_length = abs((expiration_date - today).days)
+                        if registration_length / 365 <= 1:
+                            return 2
+                    return 0
+                else:
+                    creation_date = domain_name.creation_date
+                    expiration_date = domain_name.expiration_date
+                    if (isinstance(creation_date,str) or isinstance(expiration_date,str)):
+                        try:
+                            creation_date = datetime.strptime(creation_date,'%Y-%m-%d')
+                            expiration_date = datetime.strptime(expiration_date,"%Y-%m-%d")
+                        except:
+                            return 1
+                    registration_length = abs((expiration_date - today).days)
+                    if registration_length / 365 <= 1:
+                        return 2
+                    else:
+                        return 0
+            except:
+                return 2
+        try:
+            domain_name = whois.whois(urlparse(self.url).netloc)
+            AgeOfDomain = getAgeOfDomain(domain_name)
+            DomainRegLen = getDomainRegLen(domain_name)
+            return (0, AgeOfDomain, DomainRegLen)
+        except:
+            return (2, 2, 2)
 
-#     # URLs created less than 1 year or will expire within the coming 3 months from WHOIS.
-#     def getAgeOfDomain(self):
-#         """
-#         :rtype: int
-#         """
-#         try:
-#             domain_name = whois.whois(urlparse(self.url).netloc)
-#             creation_date = domain_name.creation_date
-#             expiration_date = domain_name.expiration_date
-#             if (isinstance(creation_date,str) or isinstance(expiration_date,str)):
-#                 try:
-#                     creation_date = datetime.strptime(creation_date,'%Y-%m-%d')
-#                     expiration_date = datetime.strptime(expiration_date,"%Y-%m-%d")
-#                 except:
-#                     return 1
-#             if ((expiration_date is None) or (creation_date is None)):
-#                 return 2
-#             elif ((type(expiration_date) is list) or (type(creation_date) is list)):
-#                 return 1
-#             else:
-#                 ageofdomain = abs((expiration_date - creation_date).days)
-#                 if ((ageofdomain/30) < 6):
-#                     return 2
-#                 else:
-#                     return 0
-#         except:
+#    # URLs created less than 1 year or will expire within the coming 3 months from WHOIS.
+#    def getAgeOfDomain(self):
+#       """
+#       :rtype: int
+#       """
+#       try:
+#          domain_name = whois.whois(urlparse(self.url).netloc)
+#          creation_date = domain_name.creation_date
+#          expiration_date = domain_name.expiration_date
+#          if (isinstance(creation_date,str) or isinstance(expiration_date,str)):
+#             try:
+#                creation_date = datetime.strptime(creation_date,'%Y-%m-%d')
+#                expiration_date = datetime.strptime(expiration_date,"%Y-%m-%d")
+#             except:
+#                return 1
+#          if ((expiration_date is None) or (creation_date is None)):
 #             return 2
+#          elif ((type(expiration_date) is list) or (type(creation_date) is list)):
+#             return 1
+#          else:
+#             ageofdomain = abs((expiration_date - creation_date).days)
+#             if ((ageofdomain/30) < 6):
+#                return 2
+#             else:
+#                return 0
+#       except:
+#          return 2
 
     # The URL includes "https" or not
     def getHasHttps(self):
@@ -276,47 +276,47 @@ def getInputFields():
     def getPageRank(self):
         pass
 
-#     # The Url domain expires less than 1 year or not
-#     def getDomainRegLen(self):
-#         """
-#         :rtype: int
-#         """
-#         try:
-#             domain_name = whois.whois(urlparse(self.url).netloc)
+#    # The Url domain expires less than 1 year or not
+#    def getDomainRegLen(self):
+#       """
+#       :rtype: int
+#       """
+#       try:
+#          domain_name = whois.whois(urlparse(self.url).netloc)
+#          expiration_date = domain_name.expiration_date
+#          today = time.strftime('%Y-%m-%d')
+#          today = datetime.strptime(today, '%Y-%m-%d')
+#          if expiration_date is None:
+#             return 2
+#          elif type(expiration_date) is list or type(today) is list :
+#             return 1
+#          else:
+#             creation_date = domain_name.creation_date
 #             expiration_date = domain_name.expiration_date
-#             today = time.strftime('%Y-%m-%d')
-#             today = datetime.strptime(today, '%Y-%m-%d')
-#             if expiration_date is None:
-#                 return 2
-#             elif type(expiration_date) is list or type(today) is list :
-#                 return 1
+#             if (isinstance(creation_date,str) or isinstance(expiration_date,str)):
+#                try:
+#                   creation_date = datetime.strptime(creation_date,'%Y-%m-%d')
+#                   expiration_date = datetime.strptime(expiration_date,"%Y-%m-%d")
+#                except:
+#                   return 1
+#             registration_length = abs((expiration_date - today).days)
+#             if registration_length / 365 <= 1:
+#                return 2
 #             else:
-#                 creation_date = domain_name.creation_date
-#                 expiration_date = domain_name.expiration_date
-#                 if (isinstance(creation_date,str) or isinstance(expiration_date,str)):
-#                     try:
-#                         creation_date = datetime.strptime(creation_date,'%Y-%m-%d')
-#                         expiration_date = datetime.strptime(expiration_date,"%Y-%m-%d")
-#                     except:
-#                         return 1
-#                 registration_length = abs((expiration_date - today).days)
-#                 if registration_length / 365 <= 1:
-#                     return 2
-#                 else:
-#                     return 0
-#         except:
-#             return 2
+#                return 0
+#       except:
+#          return 2
 
-#     # The DNS record of Url exists or not
-#     def getDNSRecordExists(self):
-#         """
-#         :rtype: int
-#         """
-#         try:
-#             domain_name = whois.whois(urlparse(self.url).netloc)
-#             return 0
-#         except:
-#             return 2
+#    # The DNS record of Url exists or not
+#    def getDNSRecordExists(self):
+#       """
+#       :rtype: int
+#       """
+#       try:
+#          domain_name = whois.whois(urlparse(self.url).netloc)
+#          return 0
+#       except:
+#          return 2
 
     # The Url has low website traffic or not, from Alexa database
     def getWebTrafficAlexa(self):
@@ -426,7 +426,7 @@ def getInputFields():
 
 #to test your suggested trash method :)
 if __name__ == '__main__':
-	# run test cases
+    # run test cases
     testcase1 = "http://www.coc-ga-tech.edu" # <= type url that you wanna test
     testcase2 = "https://tinyurl.com/gatech"
     x=usefulFeatures(testcase1) # intialize the feature extraction class
@@ -453,29 +453,29 @@ if __name__ == '__main__':
 
 
     with open('phishinginfo.csv') as csvfile:
-    	reader = csv.DictReader(csvfile)
-    	for i,row in enumerate(reader):
-        	currUrl = row['url']
-        	allFeatures = usefulFeatures(currUrl)
+        reader = csv.DictReader(csvfile)
+        for i,row in enumerate(reader):
+            currUrl = row['url']
+            allFeatures = usefulFeatures(currUrl)
 
-        	URL.append(currUrl)
-        	ageOfDomain.append(allFeatures.getAgeOfDomain())
-        	hasHttps.append(allFeatures.getHasHttps())
-        	urlLength.append(allFeatures.getUrlLength())
-        	prefixSuffix.append(allFeatures.getPrefixSuffix())
-        	hasIP.append(allFeatures.getHaveIpAddress())
-        	hasAt.append(allFeatures.getHaveAtSymbol())
-        	redirects.append(allFeatures.getIfRedirects())
-        	shortenUrl.append(allFeatures.getIsShortenUrl())
-        	domainRegLength.append(allFeatures.getDomainRegLen())
-        	DNSrecord.append(allFeatures.getDNSRecordExists())
-        	webTraffixAlexa.append(allFeatures.getWebTrafficAlexa())
-        	multSubDomains.append(allFeatures.getMultSubdomains())
-        	hasHiphen.append(allFeatures.getHasHiphen())
+            URL.append(currUrl)
+            ageOfDomain.append(allFeatures.getAgeOfDomain())
+            hasHttps.append(allFeatures.getHasHttps())
+            urlLength.append(allFeatures.getUrlLength())
+            prefixSuffix.append(allFeatures.getPrefixSuffix())
+            hasIP.append(allFeatures.getHaveIpAddress())
+            hasAt.append(allFeatures.getHaveAtSymbol())
+            redirects.append(allFeatures.getIfRedirects())
+            shortenUrl.append(allFeatures.getIsShortenUrl())
+            domainRegLength.append(allFeatures.getDomainRegLen())
+            DNSrecord.append(allFeatures.getDNSRecordExists())
+            webTraffixAlexa.append(allFeatures.getWebTrafficAlexa())
+            multSubDomains.append(allFeatures.getMultSubdomains())
+            hasHiphen.append(allFeatures.getHasHiphen())
 
 
-        	if(i >= 100):
-        		break
+            if(i >= 100):
+                break
 
     # build feature table Dataframe
     data = {'URL':URL,'ageOfDomain':ageOfDomain,'hasHttps':hasHttps,'urlLength':urlLength,'prefixSuffix':prefixSuffix,'hasIP':hasIP,'hasAt':hasAt,'redirects':redirects,'shortenUrl':shortenUrl,'domainRegLength':domainRegLength,'DNSrecord':DNSrecord,'webTraffixAlexa':webTraffixAlexa,'multSubDomains':multSubDomains,'hasHiphen':hasHiphen}
