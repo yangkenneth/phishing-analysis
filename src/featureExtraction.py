@@ -27,26 +27,26 @@ class usefulFeatures(object):
     def __init__(self,url):
         self.url=url
 
-def getInputFields():
-    address = Database.find()
-    df = pd.DataFrame()
+    def getInputFields():
+        address = Database.find()
+        df = pd.DataFrame()
 
-    for var in address:
-        if var is not None:
-            count = 0
-            content = var['url_content']
-            url = Search.from_content(content)['url']
-            distance = Search.from_url(url)['distance_from_root']
+        for var in address:
+            if var is not None:
+                count = 0
+                content = var['url_content']
+                url = Search.from_content(content)['url']
+                distance = Search.from_url(url)['distance_from_root']
 
-            soup = BeautifulSoup(content, "html.parser")
-            password = soup.findAll('input', {'type': 'password'})
-            for input in password:
-                count = count + 1
-            text = soup.findAll('input', {'type': 'text'})
-            for input in text:
-                count = count + 1
-            df = df.append({'url': url, 'input_count': count, 'distance': distance}, ignore_index=True)
-    print(df)
+                soup = BeautifulSoup(content, "html.parser")
+                password = soup.findAll('input', {'type': 'password'})
+                for input in password:
+                    count = count + 1
+                text = soup.findAll('input', {'type': 'text'})
+                for input in text:
+                    count = count + 1
+                df = df.append({'url': url, 'input_count': count, 'distance': distance}, ignore_index=True)
+        print(df)
 
     # External objects such as images within a webpage are loaded from another Domain.
     def getReqUrl(self):
@@ -451,8 +451,10 @@ if __name__ == '__main__':
     multSubDomains = []
     hasHiphen = []
 
+    #please specify input filename here
+    urlFileName = 'phishinginfo.csv'
 
-    with open('phishinginfo.csv') as csvfile:
+    with open(urlFileName) as csvfile:
         reader = csv.DictReader(csvfile)
         for i,row in enumerate(reader):
             currUrl = row['url']
@@ -475,14 +477,15 @@ if __name__ == '__main__':
             webTraffixAlexa.append(allFeatures.getWebTrafficAlexa())
             multSubDomains.append(allFeatures.getMultSubdomains())
             hasHiphen.append(allFeatures.getHasHiphen())
-
-
+            print("generating features for entry ", i)
+            # top k/full list
             if(i >= 100):
                 break
 
     # build feature table Dataframe
     data = {'URL':URL,'ageOfDomain':ageOfDomain,'hasHttps':hasHttps,'urlLength':urlLength,'prefixSuffix':prefixSuffix,'hasIP':hasIP,'hasAt':hasAt,'redirects':redirects,'shortenUrl':shortenUrl,'domainRegLength':domainRegLength,'DNSrecord':DNSrecord,'webTraffixAlexa':webTraffixAlexa,'multSubDomains':multSubDomains,'hasHiphen':hasHiphen}
     df = pd.DataFrame(data)
+    # please specify output filename here
     df.to_csv('features-100.csv')
     # print(df)
     
