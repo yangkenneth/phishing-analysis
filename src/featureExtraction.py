@@ -427,11 +427,11 @@ def getInputFields():
 #to test your suggested trash method :)
 if __name__ == '__main__':
     # run test cases
-    testcase1 = "http://www.coc-ga-tech.edu" # <= type url that you wanna test
-    testcase2 = "https://tinyurl.com/gatech"
-    x=usefulFeatures(testcase1) # intialize the feature extraction class
-    getvalue=x.getDomainRegLen() #Todo change this line add your method instead
-    print(getvalue) #see the output
+    # testcase1 = "http://www.coc-ga-tech.edu" # <= type url that you wanna test
+    # testcase2 = "https://tinyurl.com/gatech"
+    # x=usefulFeatures(testcase1) # intialize the feature extraction class
+    # getvalue=x.getDomainRegLen() #Todo change this line add your method instead
+    # print(getvalue) #see the output
 
     
     # read csv file and output feature csv
@@ -459,7 +459,11 @@ if __name__ == '__main__':
             allFeatures = usefulFeatures(currUrl)
 
             URL.append(currUrl)
-            ageOfDomain.append(allFeatures.getAgeOfDomain())
+            whoisRes = allFeatures.WhoisQuery()
+            DNSrecord.append(whoisRes[0])
+            ageOfDomain.append(whoisRes[1])
+            domainRegLength.append(whoisRes[2])
+            
             hasHttps.append(allFeatures.getHasHttps())
             urlLength.append(allFeatures.getUrlLength())
             prefixSuffix.append(allFeatures.getPrefixSuffix())
@@ -467,8 +471,7 @@ if __name__ == '__main__':
             hasAt.append(allFeatures.getHaveAtSymbol())
             redirects.append(allFeatures.getIfRedirects())
             shortenUrl.append(allFeatures.getIsShortenUrl())
-            domainRegLength.append(allFeatures.getDomainRegLen())
-            DNSrecord.append(allFeatures.getDNSRecordExists())
+            
             webTraffixAlexa.append(allFeatures.getWebTrafficAlexa())
             multSubDomains.append(allFeatures.getMultSubdomains())
             hasHiphen.append(allFeatures.getHasHiphen())
