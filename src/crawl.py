@@ -5,7 +5,7 @@ import urllib3
 from bs4 import BeautifulSoup
 import socket
 import pandas as pd
-
+from random import shuffle
 import re
 import argparse
 import datetime
@@ -185,20 +185,19 @@ class Crawl:
         x.set_visited_status('GRAY')
         x.set_distance(0)
         queue.append(x)
-
-        try:
-            post = Post(str(datetime.datetime.now()),
-                x.get_id(),
-                str(x.get_url()),
-                str(x.get_ip_address()),
-                str(x.get_root_url()),
-                str(x.get_parent_url()),
-                x.get_distance(),
-                str(x.get_content()))
-            print('status: saved', 'url: ', x)
-            post.save_to_mongo()
-        except(UnicodeEncodeError) as err:
-            print('UnicodeEncodeError Occured!')
+        # try:
+        #     post = Post(str(datetime.datetime.now()),
+        #         x.get_id(),
+        #         str(x.get_url()),
+        #         str(x.get_ip_address()),
+        #         str(x.get_root_url()),
+        #         str(x.get_parent_url()),
+        #         x.get_distance(),
+        #         str(x.get_content()))
+        #     print('status: saved', 'url: ', x)
+        #     post.save_to_mongo()
+        # except(UnicodeEncodeError) as err:
+        #     print('UnicodeEncodeError Occured!')
 
         id = id + 1
         while len(queue) > 0:
@@ -292,7 +291,7 @@ class UpdateUrl:
         neighbors = self.extract_links(Url)
         if Url.get_url() in neighbors:
             neighbors.remove(Url.get_url())
-
+        shuffle(neighbors)
         Url.set_neigbors(neighbors[0:args.num_neighbors])
 
     def update_url_content(self, Url):
@@ -348,7 +347,7 @@ class UpdateUrl:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Hyperparams')
-    parser.add_argument('--num_neighbors', nargs='?', type=int, default=0,
+    parser.add_argument('--num_neighbors', nargs='?', type=int, default=3,
                         help='max number of links to crawl in a new url')
     parser.add_argument('--crawl_depth', nargs='?', type=int, default=3,
                         help='the depth of crawling a url')
@@ -358,9 +357,9 @@ if __name__ == '__main__':
                         help='Batch Size')
     parser.add_argument('--database_name', nargs='?', type=str, default='fullstack',
                         help='the name of the Mongo database we will use')
-    parser.add_argument('--url_table_name', nargs='?', type=str, default='phishing',
+    parser.add_argument('--url_table_name', nargs='?', type=str, default='alexa',
                         help='the name of the ip_table')
-    parser.add_argument('--data_loc', nargs='?', type=str, default='~/Desktop/ECE-6612/src/phishing.csv',
+    parser.add_argument('--data_loc', nargs='?', type=str, default='~/Desktop/Dev/ECE-6612/src/alexa.csv',
                         help='data location')
     parser.add_argument('--features_table_name', nargs='?', type=str, default='feature_table',
                         help='the name of the feature_table')
@@ -372,7 +371,7 @@ if __name__ == '__main__':
                         help='timeout for so')
     parser.add_argument('--http_retries', nargs='?', type=int, default=1,
                         help='number of retry counts')
-    parser.add_argument('--start', nargs='?', type=int, default=4715,
+    parser.add_argument('--start', nargs='?', type=int, default=1,
                         help='url index to start from')
     args = parser.parse_args()
     crawler = Crawl(args)
