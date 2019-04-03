@@ -452,15 +452,16 @@ if __name__ == '__main__':
     hasHiphen = []
 
     #please specify input filename here
-    urlFileName = 'alexa-5000.csv'
+    urlFileName = 'pshish0.csv'
 
     with open(urlFileName) as csvfile:
         reader = csv.DictReader(csvfile)
         for i,row in enumerate(reader):
             currUrl = row['url']
             # add http:// prefix if it does not have this
-            if (len(currUrl) <= 7 or currUrl[0:6] != 'http://' or currUrl[0:7] != 'https://'):
+            if (len(currUrl) <= 7 or (currUrl[0:7] != 'http://' and currUrl[0:8] != 'https://')):
                 currUrl = 'http://' + currUrl
+            print(currUrl)
             allFeatures = usefulFeatures(currUrl)
 
             URL.append(currUrl)
@@ -480,15 +481,15 @@ if __name__ == '__main__':
             webTraffixAlexa.append(allFeatures.getWebTrafficAlexa())
             multSubDomains.append(allFeatures.getMultSubdomains())
             hasHiphen.append(allFeatures.getHasHiphen())
-            print("generating features for entry ", i)
+            print("generated features for entry ", i)
             # top k/full list
-            # if(i >= 100):
+            # if(i >= 1000):
             #     break
 
     # build feature table Dataframe
     data = {'URL':URL,'ageOfDomain':ageOfDomain,'hasHttps':hasHttps,'urlLength':urlLength,'prefixSuffix':prefixSuffix,'hasIP':hasIP,'hasAt':hasAt,'redirects':redirects,'shortenUrl':shortenUrl,'domainRegLength':domainRegLength,'DNSrecord':DNSrecord,'webTraffixAlexa':webTraffixAlexa,'multSubDomains':multSubDomains,'hasHiphen':hasHiphen}
     df = pd.DataFrame(data)
     # please specify output filename here
-    df.to_csv('features-alexa-5000.csv')
+    df.to_csv('features-phish0.csv')
     # print(df)
     
