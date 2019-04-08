@@ -365,6 +365,25 @@ class usefulFeatures(object):
     def getStatisticalReport(self):
         pass
 
+    def getFeatureSummary(self):
+        URL = this.url
+        whoisRes = this.WhoisQuery()
+        ageOfDomain = whoisRes[1]
+        hasHttps = this.getHasHttps()
+        urlLength = this.getUrlLength()
+        prefixSuffix = this.getPrefixSuffix()
+        hasIP = this.getHaveIpAddress()
+        hasAt = this.getHaveAtSymbol()
+        redirects = this.getIfRedirects()
+        shortenUrl = this.getIsShortenUrl()
+        domainRegLength = whoisRes[2]
+        DNSrecord = whoisRes[0]
+        webTraffixAlexa = this.getWebTrafficAlexa()
+        multSubDomains = this.getMultSubdomains()
+
+        data = {'URL':URL,'ageOfDomain':ageOfDomain,'hasHttps':hasHttps,'urlLength':urlLength,'prefixSuffix':prefixSuffix,'hasIP':hasIP,'hasAt':hasAt,'redirects':redirects,'shortenUrl':shortenUrl,'domainRegLength':domainRegLength,'DNSrecord':DNSrecord,'webTraffixAlexa':webTraffixAlexa,'multSubDomains':multSubDomains}
+        return data
+
 #to test your suggested trash method :)
 if __name__ == '__main__':
     # run test cases
@@ -392,7 +411,7 @@ if __name__ == '__main__':
     multSubDomains = []
 
     #please specify input filename here
-    urlFileName = 'alexa0.csv'
+    urlFileName = 'alexa0_5000.csv'
 
     with open(urlFileName) as csvfile:
         reader = csv.DictReader(csvfile)
@@ -430,6 +449,6 @@ if __name__ == '__main__':
     data = {'URL':URL,'ageOfDomain':ageOfDomain,'hasHttps':hasHttps,'urlLength':urlLength,'prefixSuffix':prefixSuffix,'hasIP':hasIP,'hasAt':hasAt,'redirects':redirects,'shortenUrl':shortenUrl,'domainRegLength':domainRegLength,'DNSrecord':DNSrecord,'webTraffixAlexa':webTraffixAlexa,'multSubDomains':multSubDomains}
     df = pd.DataFrame(data)
     # please specify output filename here
-    df.to_csv('features-alexa0.csv')
+    df.to_csv('features-alexa0_5000.csv')
     # print(df)
     
