@@ -30,23 +30,49 @@ class usefulFeatures(object):
 def getInputFields():
     address = Database.find()
     df = pd.DataFrame()
-
+    total = 0
     for var in address:
-        if var is not None:
-            count = 0
-            content = var['url_content']
-            url = Search.from_content(content)['url']
-            distance = Search.from_url(url)['distance_from_root']
+        if var['url_content'] == "None":
+            pass
+        else:
+            if total < 1000:
+                count = 0
+                content = var['url_content']
+                url = var['url']
+                distance = var['distance_from_root']
+                soup = BeautifulSoup(content, "html.parser")
+                password = soup.findAll('input', {'type': 'password'})
+                for input in password:
+                    count = count + 1
+                text = soup.findAll('input', {'type': 'text'})
+                for input in text:
+                    count = count + 1
 
-            soup = BeautifulSoup(content, "html.parser")
-            password = soup.findAll('input', {'type': 'password'})
-            for input in password:
-                count = count + 1
-            text = soup.findAll('input', {'type': 'text'})
-            for input in text:
-                count = count + 1
-            df = df.append({'url': url, 'input_count': count, 'distance': distance}, ignore_index=True)
+                total = total + 1
+                df = df.append({'url': url, 'num_of_form': count, 'distance': distance}, ignore_index=True)
+    # df.to_excel('phish-0.xlsx')
+    df.to_csv('phish-0.csv', index=False)
     print(df)
+
+def getInputFieldsDictionary(url):
+    address = Search.from_url(url)
+
+    if address['url_content'] == "None":
+        pass
+    else:
+        content = address['url_content']
+        soup = BeautifulSoup(content, "html.parser")
+        count = 0
+
+        password = soup.findAll('input', {'type': 'password'})
+        for input in password:
+            count = count + 1
+        text = soup.findAll('input', {'type': 'text'})
+        for input in text:
+            count = count + 1
+
+        dictionary = {'num_of_form': count}
+        return dictionary
 
     # External objects such as images within a webpage are loaded from another Domain.
     def getReqUrl(self):

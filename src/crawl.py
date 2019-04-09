@@ -392,8 +392,12 @@ def main():
     # example = Search.url_content()
     # print(example)
 
-    # FIND INPUT FIELDS IN HTML/SAVE IN PANDAS DATAFRAME
+    # FIND num_of_form IN HTML/SAVE IN PANDAS DATAFRAME
     # featureExtraction.getInputFields()
+
+    # DICTIONARY FOR num_of_form
+    # featureExtraction.getInputFieldsDictionary("https://storkbr.com/")
+
 
 if __name__ == '__main__':
     main()
