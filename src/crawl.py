@@ -185,19 +185,19 @@ class Crawl:
         x.set_visited_status('GRAY')
         x.set_distance(0)
         queue.append(x)
-        # try:
-        #     post = Post(str(datetime.datetime.now()),
-        #         x.get_id(),
-        #         str(x.get_url()),
-        #         str(x.get_ip_address()),
-        #         str(x.get_root_url()),
-        #         str(x.get_parent_url()),
-        #         x.get_distance(),
-        #         str(x.get_content()))
-        #     print('status: saved', 'url: ', x)
-        #     post.save_to_mongo()
-        # except(UnicodeEncodeError) as err:
-        #     print('UnicodeEncodeError Occured!')
+        try:
+            post = Post(str(datetime.datetime.now()),
+                x.get_id(),
+                str(x.get_url()),
+                str(x.get_ip_address()),
+                str(x.get_root_url()),
+                str(x.get_parent_url()),
+                x.get_distance(),
+                str(x.get_content()))
+            print('status: saved', 'url: ', x)
+            post.save_to_mongo()
+        except(UnicodeEncodeError) as err:
+            print('UnicodeEncodeError Occured!')
 
         id = id + 1
         while len(queue) > 0:
