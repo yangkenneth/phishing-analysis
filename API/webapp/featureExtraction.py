@@ -16,11 +16,12 @@ import urllib.request
 from urllib.error import HTTPError
 from datetime import datetime
 import nltk
-from crawl import Url
-from crawl import UpdateUrl
+from . crawl import Url
+from . crawl import UpdateUrl
 from joblib import load
 import argparse
 import numpy as np
+import sys, os
 
 ## This class contains methods that gets url and return useful featrues
 class UsefulFeatures(object):
@@ -240,14 +241,14 @@ class UsefulFeatures(object):
         return self.url.count(".")
 
 
-    def getHTMLContent(self, args):
+    def getHTMLContent(self):
         url = Url(0, self.url)
-        UpdateUrl(args).update_url_content(url)
+        UpdateUrl().update_url_content(url)
         return url.get_content()
 
-    def get_content_features(self, args):
+    def get_content_features(self):
         website_metric = {}
-        db_content = str(self.getHTMLContent(args))
+        db_content = str(self.getHTMLContent())
         if db_content != 'None':
             count = 0
             cnt = 0
@@ -272,7 +273,7 @@ class UsefulFeatures(object):
         return website_metric
 
 
-    def getFeatureSummary(self, args):
+    def getFeatureSummary(self):
         URL = self.url
         whoisRes = self.WhoisQuery()
         ageOfDomain = whoisRes[1]
@@ -292,24 +293,24 @@ class UsefulFeatures(object):
         #         'prefixSuffix': prefixSuffix, 'hasIP': hasIP, 'hasAt': hasAt, 'redirects': redirects,
         #         'shortenUrl': shortenUrl, 'domainRegLength': domainRegLength, 'DNSrecord': DNSrecord,
         #         'webTraffixAlexa': webTraffixAlexa, 'multSubDomains': multSubDomains}
-        website_metric = self.get_content_features(args)
+        website_metric = self.get_content_features()
         return [ageOfDomain, hasHttps, urlLength, prefixSuffix, hasIP, hasAt, redirects, shortenUrl,
          domainRegLength, DNSrecord, webTraffixAlexa, multSubDomains, website_metric['text_length'], website_metric['num_onclick'],
          website_metric['num_of_form']]
 
     def predict(self):
-        parser = argparse.ArgumentParser(description='Hyperparams')
-        parser.add_argument('--http_timeout', nargs='?', type=int, default=5,
-                            help='timeout for http requests')
-        parser.add_argument('--socket_timeout', nargs='?', type=int, default=3,
-                            help='timeout for so')
-        parser.add_argument('--http_retries', nargs='?', type=int, default=1,
-                            help='number of retry counts')
-        args = parser.parse_args()
+        # parser = argparse.ArgumentParser(description='Hyperparams')
+        # parser.add_argument('--http_timeout', nargs='?', type=int, default=5,
+        #                     help='timeout for http requests')
+        # parser.add_argument('--socket_timeout', nargs='?', type=int, default=3,
+        #                     help='timeout for so')
+        # parser.add_argument('--http_retries', nargs='?', type=int, default=1,
+        #                     help='number of retry counts')
+        # args = parser.parse_args()
         features = UsefulFeatures(self.url)
-        all_features = features.getFeatureSummary(args)
+        all_features = features.getFeatureSummary()
         all_features = np.array(all_features).reshape(1, len(all_features))
-        clf2 = load('model.joblib')
+        clf2 = load(os.path.join(os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))), 'model.joblib'))
         preds = clf2.predict(all_features)[0]
         preds = int(preds)
         return preds

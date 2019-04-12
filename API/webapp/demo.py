@@ -1,5 +1,5 @@
 from featureExtraction import UsefulFeatures
-url = 'art.com'
+url = 'https://cash-fly.com'
 
 features = UsefulFeatures(url)
 print(features.predict())
