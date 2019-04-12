@@ -1,6 +1,6 @@
 from datetime import datetime
-from database import Database
-from post import Post
+from . database import Database
+from . post import Post
 import urllib3
 from bs4 import BeautifulSoup
 import socket
@@ -144,14 +144,14 @@ class Url:
 
 class Crawl:
 
-    def __init__(self, args):
-        self.batch_sz = args.batch_size
-        self.start = args.start
-        self.id = args.start
-        self.args = args
+    def __init__(self):
+        self.batch_sz = 15
+        self.start = 0
+        self.id = 0
+        #self.args = args
 
     def extract_batches(pos, batch_sz):
-        CSV_PATH = args.data_loc
+        CSV_PATH = '~/Desktop/Dev/ECE-6612/src/alexa.csv'
         df = pd.read_csv(CSV_PATH)
         if pos > df.shape[0]:
             raise (StopIteration('data exceeded!'))
@@ -165,7 +165,7 @@ class Crawl:
         """
         # table_instances = self.init_database()
 
-        for i in range(self.start, self.args.num_urls, self.batch_sz):
+        for i in range(self.start, 10000, self.batch_sz):
             print('batch: {} crawled'.format(i%self.batch_sz))
             url_strings = Crawl.extract_batches(i, self.batch_sz).tolist()
             for j in range(len(url_strings)):
@@ -179,8 +179,8 @@ class Crawl:
         :return: the current id
         """
         # INITIALIZE DATABASE/COLLECTION
-        Database.initialize(args.database_name, args.url_table_name)
-        x = UpdateUrl(self.args).create_URL_node(id=id, url_string=x, root_url=root_url)
+        Database.initialize('fullstack', 'phish0')
+        x = UpdateUrl().create_URL_node(id=id, url_string=x, root_url=root_url)
         queue = []
         x.set_visited_status('GRAY')
         x.set_distance(0)
@@ -205,11 +205,11 @@ class Crawl:
             for url in current_url.get_neighbors():
                 id = id + 1
                 if type(url) is str:
-                    url = UpdateUrl(self.args).create_URL_node(id=id, url_string=url, root_url=root_url)
+                    url = UpdateUrl().create_URL_node(id=id, url_string=url, root_url=root_url)
                 url.set_parent_url(current_url)
                 if url.get_visited_status() == 'WHITE':
                     url.set_distance(current_url.get_distance() + 1)
-                    if url.get_distance() < self.args.crawl_depth:
+                    if url.get_distance() < 3:
                         url.set_visited_status('GRAY')
                         url.set_parent_url(current_url)
 
@@ -237,11 +237,11 @@ class Crawl:
 
 class UpdateUrl:
 
-    def __init__(self, args):
+    def __init__(self):
         """
         TODO: Add some attributes later
         """
-        self.args = args
+        #self.args = args
 
     def open_url(self,  Url):
         """
@@ -249,10 +249,10 @@ class UpdateUrl:
         :param Url: the Url Class
         :return: a BeautifulSoup object
         """
-        timeout = urllib3.Timeout(connect=self.args.http_timeout, read=self.args.socket_timeout)
+        timeout = urllib3.Timeout(connect=5, read=3)
         client_options = {
             "timeout": timeout,
-            "retries": self.args.http_retries
+            "retries": 1
         }
 
         url = Url.get_url()
@@ -292,7 +292,7 @@ class UpdateUrl:
         if Url.get_url() in neighbors:
             neighbors.remove(Url.get_url())
         shuffle(neighbors)
-        Url.set_neigbors(neighbors[0:args.num_neighbors])
+        Url.set_neigbors(neighbors[0:3])
 
     def update_url_content(self, Url):
         """
@@ -345,45 +345,45 @@ class UpdateUrl:
         URL.set_root_url(root_url)
         return URL
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Hyperparams')
-    parser.add_argument('--num_neighbors', nargs='?', type=int, default=3,
-                        help='max number of links to crawl in a new url')
-    parser.add_argument('--crawl_depth', nargs='?', type=int, default=3,
-                        help='the depth of crawling a url')
-    parser.add_argument('--resume', nargs='?', type=str, default=None,
-                        help='the url index to resume crawling')
-    parser.add_argument('--batch_size', nargs='?', type=int, default=15,
-                        help='Batch Size')
-    parser.add_argument('--database_name', nargs='?', type=str, default='fullstack',
-                        help='the name of the Mongo database we will use')
-    parser.add_argument('--url_table_name', nargs='?', type=str, default='alexa',
-                        help='the name of the ip_table')
-    parser.add_argument('--data_loc', nargs='?', type=str, default='~/Desktop/Dev/ECE-6612/src/alexa.csv',
-                        help='data location')
-    parser.add_argument('--features_table_name', nargs='?', type=str, default='feature_table',
-                        help='the name of the feature_table')
-    parser.add_argument('--num_urls', nargs='?', type=int, default=10000,
-                        help='total number of urls o list to crawl')
-    parser.add_argument('--http_timeout', nargs='?', type=int, default=5,
-                        help='timeout for http requests')
-    parser.add_argument('--socket_timeout', nargs='?', type=int, default=3,
-                        help='timeout for so')
-    parser.add_argument('--http_retries', nargs='?', type=int, default=1,
-                        help='number of retry counts')
-    parser.add_argument('--start', nargs='?', type=int, default=1,
-                        help='url index to start from')
-    args = parser.parse_args()
-    crawler = Crawl(args)
-    crawler.crawl()
+# if __name__ == '__main__':
+#     parser = argparse.ArgumentParser(description='Hyperparams')
+#     parser.add_argument('--num_neighbors', nargs='?', type=int, default=3,
+#                         help='max number of links to crawl in a new url')
+#     parser.add_argument('--crawl_depth', nargs='?', type=int, default=3,
+#                         help='the depth of crawling a url')
+#     parser.add_argument('--resume', nargs='?', type=str, default=None,
+#                         help='the url index to resume crawling')
+#     parser.add_argument('--batch_size', nargs='?', type=int, default=15,
+#                         help='Batch Size')
+#     parser.add_argument('--database_name', nargs='?', type=str, default='fullstack',
+#                         help='the name of the Mongo database we will use')
+#     parser.add_argument('--url_table_name', nargs='?', type=str, default='alexa',
+#                         help='the name of the ip_table')
+#     parser.add_argument('--data_loc', nargs='?', type=str, default='~/Desktop/Dev/ECE-6612/src/alexa.csv',
+#                         help='data location')
+#     parser.add_argument('--features_table_name', nargs='?', type=str, default='feature_table',
+#                         help='the name of the feature_table')
+#     parser.add_argument('--num_urls', nargs='?', type=int, default=10000,
+#                         help='total number of urls o list to crawl')
+#     parser.add_argument('--http_timeout', nargs='?', type=int, default=5,
+#                         help='timeout for http requests')
+#     parser.add_argument('--socket_timeout', nargs='?', type=int, default=3,
+#                         help='timeout for so')
+#     parser.add_argument('--http_retries', nargs='?', type=int, default=1,
+#                         help='number of retry counts')
+#     parser.add_argument('--start', nargs='?', type=int, default=1,
+#                         help='url index to start from')
+#     args = parser.parse_args()
+#     crawler = Crawl(args)
+#     crawler.crawl()
 
 
-def main():
-    url = 'https://stackexchange.com'
-    id = 0
-    root_url = 'https://www.people.com'
-    url = UpdateUrl().create_URL_node(id, url, url)
-    crawl = Crawl(args).BFS(id=id, x=url, root_url=url)
+# def main():
+#     url = 'https://stackexchange.com'
+#     id = 0
+#     root_url = 'https://www.people.com'
+#     url = UpdateUrl().create_URL_node(id, url, url)
+#     crawl = Crawl(args).BFS(id=id, x=url, root_url=url)
 
 
 #if __name__ == '__main__':
