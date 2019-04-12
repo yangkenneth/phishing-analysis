@@ -9,20 +9,18 @@
 
 import time
 import re
-from urllib.parse import urlparse, urlencode
+from urllib.parse import urlparse
 import whois
 from bs4 import BeautifulSoup
-import requests
 import urllib.request
 from urllib.error import HTTPError
 from datetime import datetime
-import csv
-import pandas as pd
-from itertools import islice
-from database import Database
+import nltk
 from crawl import Url
 from crawl import UpdateUrl
+from joblib import load
 import argparse
+import numpy as np
 
 ## This class contains methods that gets url and return useful featrues
 class UsefulFeatures(object):
@@ -265,7 +263,10 @@ class UsefulFeatures(object):
                 t2 = i.get('onclick')
                 if t2 is not None:
                     cnt += 1
-            website_metric['text_length'] = len(soup.get_text())
+            text = soup.get_text()
+            words = nltk.word_tokenize(text)
+            words = [w for w in words if w.isalpha()]
+            website_metric['text_length'] = len(words)
             website_metric['num_onclick'] = cnt
             website_metric['num_of_form'] = count
         return website_metric
@@ -287,22 +288,28 @@ class UsefulFeatures(object):
         webTraffixAlexa = self.getWebTrafficAlexa()
         multSubDomains = self.getMultSubdomains()
 
-        data = {'URL': URL, 'ageOfDomain': ageOfDomain, 'hasHttps': hasHttps, 'urlLength': urlLength,
-                'prefixSuffix': prefixSuffix, 'hasIP': hasIP, 'hasAt': hasAt, 'redirects': redirects,
-                'shortenUrl': shortenUrl, 'domainRegLength': domainRegLength, 'DNSrecord': DNSrecord,
-                'webTraffixAlexa': webTraffixAlexa, 'multSubDomains': multSubDomains}
-        data.update(self.get_content_features(args))
-        return data
+        # data = {'ageOfDomain': ageOfDomain, 'hasHttps': hasHttps, 'urlLength': urlLength,
+        #         'prefixSuffix': prefixSuffix, 'hasIP': hasIP, 'hasAt': hasAt, 'redirects': redirects,
+        #         'shortenUrl': shortenUrl, 'domainRegLength': domainRegLength, 'DNSrecord': DNSrecord,
+        #         'webTraffixAlexa': webTraffixAlexa, 'multSubDomains': multSubDomains}
+        website_metric = self.get_content_features(args)
+        return [ageOfDomain, hasHttps, urlLength, prefixSuffix, hasIP, hasAt, redirects, shortenUrl,
+         domainRegLength, DNSrecord, webTraffixAlexa, multSubDomains, website_metric['text_length'], website_metric['num_onclick'],
+         website_metric['num_of_form']]
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Hyperparams')
-    parser.add_argument('--http_timeout', nargs='?', type=int, default=5,
-                        help='timeout for http requests')
-    parser.add_argument('--socket_timeout', nargs='?', type=int, default=3,
-                        help='timeout for so')
-    parser.add_argument('--http_retries', nargs='?', type=int, default=1,
-                        help='number of retry counts')
-    args = parser.parse_args()
-    features = UsefulFeatures('art.com')
-    all_features = features.getFeatureSummary(args)
-    print(all_features)
+    def predict(self):
+        parser = argparse.ArgumentParser(description='Hyperparams')
+        parser.add_argument('--http_timeout', nargs='?', type=int, default=5,
+                            help='timeout for http requests')
+        parser.add_argument('--socket_timeout', nargs='?', type=int, default=3,
+                            help='timeout for so')
+        parser.add_argument('--http_retries', nargs='?', type=int, default=1,
+                            help='number of retry counts')
+        args = parser.parse_args()
+        features = UsefulFeatures(self.url)
+        all_features = features.getFeatureSummary(args)
+        all_features = np.array(all_features).reshape(1, len(all_features))
+        clf2 = load('model.joblib')
+        preds = clf2.predict(all_features)[0]
+        preds = int(preds)
+        return preds

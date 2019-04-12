@@ -1,5 +1,5 @@
 from featureExtraction import UsefulFeatures
+url = 'art.com'
 
-def getAllFeatures(url):
-    features = UsefulFeatures(url)
-    feature_dict = features.getFeatureSummary()
+features = UsefulFeatures(url)
+print(features.predict())
