@@ -108,19 +108,11 @@ criterion = 'entropy'
 for max_depth in range(2,20):
     clf = DT(max_depth = max_depth, criterion  = criterion)
     clf.fit(x_train, y_train)
-
-#     print('test')
     preds = clf.predict(x_test)
     dpth.append(max_depth)
     acc.append(sum(preds==y_test)/len(preds))
-#     print(sum(preds==y_test)/len(preds))
-#     print('train')
     preds = clf.predict(x_train)
     acc_train.append(sum(preds==y_train)/len(preds))
-    if max_depth == 4:
-        print('tree plotted accuracy', acc[-1])
-        tree_plotter(clf, feat, max_depth)
-#     print(sum(preds==y_train)/len(preds))
 
 arg = np.argmax(acc)
 max_depth = dpth[arg]
